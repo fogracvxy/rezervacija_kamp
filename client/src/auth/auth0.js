@@ -1,11 +1,8 @@
 import React from "react";
 import { useHistory } from "react-router-dom";
 import { Auth0Provider } from "@auth0/auth0-react";
-
+require("dotenv").config();
 const Auth0ProviderWithHistory = ({ children }) => {
-  const domain = process.env.REACT_APP_AUTH0_DOMAIN;
-  const clientID = process.env.REACT_APP_AUTH0_CLIENT_ID;
-
   const history = useHistory();
 
   const onRedirectCallback = (appState) => {
@@ -14,8 +11,8 @@ const Auth0ProviderWithHistory = ({ children }) => {
 
   return (
     <Auth0Provider
-      domain={domain}
-      clientId={clientID}
+      domain={process.env.REACT_APP_AUTH0_DOMAIN}
+      clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
       redirectUri={window.location.origin}
       onRedirectCallBack={onRedirectCallback}
       audience="https://lucica.eu.auth0.com/api/v2/"
