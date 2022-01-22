@@ -4,6 +4,8 @@ const app = express();
 const path = require("path");
 const pool = require("./db");
 const PORT = process.env.PORT || 3001;
+const nodemailer = require("nodemailer");
+const moment = require("moment");
 //middleware
 app.use(express.json());
 app.use(cors());
@@ -53,7 +55,7 @@ app.get("/smjestaj", async (req, res) => {
     console.error(err.message);
   }
 });
-//umetanje rezervacije
+//umetanje rezervacije i slanje maila kod poslanog zahtjeva za rezervaciju
 app.post("/rezervirajtermin", async (req, res) => {
   try {
     console.log(req.body);
@@ -70,10 +72,52 @@ app.post("/rezervirajtermin", async (req, res) => {
       [pocetniDatum, krajniDatum, smjestajIme, mailGosta, imeGosta, brojGosta]
     );
     res.json("Uspješna rezervacija");
+    let transporter = nodemailer.createTransport({
+      host: process.env.MAIL_HOST,
+      port: process.env.MAIL_PORT,
+      secure: false, // upgrade later with STARTTLS
+      auth: {
+        user: process.env.MAIL_IME,
+        pass: process.env.MAIL_PASS,
+      },
+      tls: {
+        // do not fail on invalid certs
+        rejectUnauthorized: false,
+      },
+    });
+    transporter.verify(function (error, success) {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log("Uspjesno spajanje na mail posluzitelj");
+      }
+    });
+    transporter.sendMail(
+      {
+        from: process.env.MAIL_IME,
+        to: "marin@robinzonlucica.hr",
+        subject: `Rezervacija za ${imeGosta}`,
+        text:
+          `Pozdrav Marin,
+         rezervacija na ime: ${imeGosta} za datum od ` +
+          moment(pocetniDatum).format("DD.MM.YYYY.") +
+          ` do ` +
+          moment(krajniDatum).format("DD.MM.YYYY.") +
+          `\n za smještaj ${smjestajIme} 
+         Mobilni broj: ${brojGosta}
+         Mail: ${mailGosta} je poslana 
+         Provjeri rezervaciju na stranici za odobrenje!`,
+      },
+      (err, info) => {
+        console.log(info.envelope);
+        console.log(info.messageId);
+      }
+    );
   } catch (err) {
     res.json("Neuspješna rezervacija");
   }
 });
+//slanje rezerviranih datuma
 app.post("/rezerviranidatumi", async (req, res) => {
   try {
     const { smjestajIme } = req.body;

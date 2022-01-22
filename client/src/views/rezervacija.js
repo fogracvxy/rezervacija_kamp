@@ -241,7 +241,9 @@ const Rezervacija = () => {
               <Col sm="12">
                 <Form.Control
                   name="brojForma"
-                  type="tel"
+                  type="number"
+                  min="0"
+                  onInput="this.value = Math.abs(this.value) > 0 ? Math.abs(this.value) : null"
                   className="brojForma"
                   onChange={(event) => setBrojGosta(event.target.value)}
                   isInvalid={!!errorForma.brojGostaProvjera}
@@ -257,7 +259,7 @@ const Rezervacija = () => {
             </Form.Group>
             <Form.Group controlId="formBasicEmail">
               <Form.Label column sm="12">
-                Mail Adresa
+                Mail adresa
               </Form.Label>
               <Col sm="12">
                 <Form.Control
