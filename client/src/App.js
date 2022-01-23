@@ -8,6 +8,7 @@ import {
   RezervacijaAdmin,
   ErrorPage,
 } from "./views";
+import { Meta } from "./components";
 import { Navig, Loading } from "./components/index";
 import ProtectedRoute from "./auth/protectedroute";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -21,6 +22,7 @@ function App() {
   }
   return (
     <div className="App">
+      <Meta />
       <Navig />
       <Container className="flex-grow-1 mt-5">
         <Switch>

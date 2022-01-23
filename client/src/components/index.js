@@ -4,4 +4,5 @@ import Navig from "./nav";
 import Loading from "./loading";
 import Gallery from "./gallery";
 import Karta from "./karta";
-export { LoginButton, LogoutButton, Navig, Loading, Gallery, Karta };
+import Meta from "./meta";
+export { LoginButton, LogoutButton, Navig, Loading, Gallery, Karta, Meta };
