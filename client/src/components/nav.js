@@ -29,6 +29,15 @@ const Navig = () => {
         >
           Rezervacija
         </Nav.Link>
+        <Nav.Link
+          onClick={() => setExpanded(false)}
+          as={RouterNavLink}
+          to={{ pathname: "https://robinzonlucica.hr/" }}
+          target="_blank"
+          activeClassName="router-link-exact-active"
+        >
+          Web
+        </Nav.Link>
       </Nav>
     );
   };

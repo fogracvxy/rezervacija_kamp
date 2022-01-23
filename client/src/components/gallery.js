@@ -5,21 +5,28 @@ const Gallery = () => {
   // ubaciti fotke lucice umjesto ovih
   const images = [
     {
-      original: "https://i.gyazo.com/33080608da4345cf238cd4f4aa4c947f.jpg",
-      thumbnail: "https://i.gyazo.com/33080608da4345cf238cd4f4aa4c947f.jpg",
+      original: "https://robinzonlucica.hr/Slike/galerija/DSC_1545.jpg",
+      thumbnail: "https://robinzonlucica.hr/Slike/thumb/DSC_1545.jpg",
     },
     {
-      original: "https://i.gyazo.com/a8b9a2db92eaf278ea613173508b8409.jpg",
-      thumbnail: "https://i.gyazo.com/a8b9a2db92eaf278ea613173508b8409.jpg",
-      originalTitle: "test",
+      original: "https://robinzonlucica.hr/Slike/galerija/DSC_0986.jpg",
+      thumbnail: "https://robinzonlucica.hr/Slike/galerija/DSC_0986.jpg",
     },
     {
-      original: "https://i.gyazo.com/f4f813f81e7466f4bf214769758707f2.jpg",
-      thumbnail: "https://i.gyazo.com/f4f813f81e7466f4bf214769758707f2.jpg",
+      original: "https://robinzonlucica.hr/Slike/galerija/DSC_1659.jpg",
+      thumbnail: "https://robinzonlucica.hr/Slike/galerija/DSC_1659.jpg",
     },
     {
-      original: "https://i.gyazo.com/81a09b5d6d2ef7052f4daf64abc57462.jpg",
-      thumbnail: "https://i.gyazo.com/81a09b5d6d2ef7052f4daf64abc57462.jpg",
+      original: "https://robinzonlucica.hr/Slike/galerija/DSC_1900.jpg",
+      thumbnail: "https://robinzonlucica.hr/Slike/galerija/DSC_1900.jpg",
+    },
+    {
+      original: "https://robinzonlucica.hr/Slike/galerija/DSC_1673.jpg",
+      thumbnail: "https://robinzonlucica.hr/Slike/galerija/DSC_1673.jpg",
+    },
+    {
+      original: "https://robinzonlucica.hr/Slike/galerija/DSC_0309.jpg",
+      thumbnail: "https://robinzonlucica.hr/Slike/galerija/DSC_0309.jpg",
     },
   ];
   return (
