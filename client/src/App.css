@@ -116,6 +116,14 @@ footer {
 footer .logo {
   margin: 0 auto 10px auto;
 }
+.footerikone a {
+  text-decoration: none;
+  color: black;
+  margin: 10px;
+}
+.footerikone a:hover {
+  color: #3b6b35;
+}
 body {
   font-family: "Open Sans", sans-serif;
   background-color: white;

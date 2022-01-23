@@ -1,5 +1,6 @@
 import React from "react";
 import moment from "moment";
+import { FaFacebook, FaInstagram, FaMapMarkerAlt } from "react-icons/fa";
 const Footer = () => {
   const datum = Date();
   return (
@@ -17,6 +18,18 @@ const Footer = () => {
           <br /> Marin Spudić
         </a>
       </p>
+      <h4 className="footerikone">
+        {" "}
+        <a href="https://www.facebook.com/robinzonlucica/">
+          <FaFacebook />
+        </a>
+        <a href="https://www.instagram.com/robinzonlucica/">
+          <FaInstagram />
+        </a>
+        <a href="https://goo.gl/maps/4KEa1KxUtjLtFY4b6">
+          <FaMapMarkerAlt />
+        </a>
+      </h4>
     </footer>
   );
 };
