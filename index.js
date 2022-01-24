@@ -41,8 +41,59 @@ app.put("/rezervacijaodobri/:id", async (req, res) => {
     await pool.query("UPDATE reservations SET odobreno = true WHERE id = $1", [
       id,
     ]);
-    res.json("Rezervacija odobrena");
+
+    const getReservations = await pool.query(
+      "SELECT *, lower(reservation_dates) as t_start, upper(reservation_dates) AS t_end FROM reservations where id=$1",
+      [id]
+    );
+    let transporter = nodemailer.createTransport({
+      host: process.env.MAIL_HOST,
+      port: process.env.MAIL_PORT,
+      secure: false, // upgrade later with STARTTLS
+      auth: {
+        user: process.env.MAIL_IME,
+        pass: process.env.MAIL_PASS,
+      },
+      tls: {
+        // do not fail on invalid certs
+        rejectUnauthorized: false,
+      },
+    });
+    transporter.verify(function (error, success) {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log("Uspjesno spajanje na mail posluzitelj");
+      }
+    });
+    if (getReservations.rows[0].odobreno) {
+      transporter.sendMail(
+        {
+          from: process.env.MAIL_IME,
+          to: getReservations.rows[0].user_mail,
+          subject: "Rezervacija Robinzonski kamp Lučica",
+          text:
+            `Pozdrav ` +
+            getReservations.rows[0].user_name +
+            `,\n\nrezervacija kreirana na dan ` +
+            moment(getReservations.rows[0].created_at).format("DD.MM.YYYY.") +
+            ` je odobrena. \n\nRaspon datuma od ` +
+            moment(getReservations.rows[0].t_start).format("DD.MM.YYYY.") +
+            ` do ` +
+            moment(getReservations.rows[0].t_end).format("DD.MM.YYYY.") +
+            `\n\nSmještaj: ` +
+            getReservations.rows[0].room_id +
+            `\n\nZa dodatne upite nazovite na broj +385992768700\nVidimo se!\nRobinzonski Kamp Lučica`,
+        },
+        (err, info) => {
+          console.log(info.envelope);
+          console.log(info.messageId);
+        }
+      );
+      res.json("Rezervacija odobrena");
+    }
   } catch (err) {
+    console.log(err);
     res.json("Greška kod odobrenja");
   }
 });
@@ -58,6 +109,7 @@ app.get("/smjestaj", async (req, res) => {
 //umetanje rezervacije i slanje maila kod poslanog zahtjeva za rezervaciju
 app.post("/rezervirajtermin", async (req, res) => {
   try {
+    //testni console log
     console.log(req.body);
     const {
       mailGosta,
