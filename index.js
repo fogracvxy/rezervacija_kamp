@@ -150,15 +150,11 @@ app.post("/rezervirajtermin", async (req, res) => {
         to: "marin@robinzonlucica.hr",
         subject: `Rezervacija za ${imeGosta}`,
         text:
-          `Pozdrav Marin,
-         rezervacija na ime: ${imeGosta} za datum od ` +
+          `Pozdrav Marin,\n\n rezervacija na ime: ${imeGosta}\n Za datum od ` +
           moment(pocetniDatum).format("DD.MM.YYYY.") +
           ` do ` +
           moment(krajniDatum).format("DD.MM.YYYY.") +
-          `\n za smještaj ${smjestajIme} 
-         Mobilni broj: ${brojGosta}
-         Mail: ${mailGosta} je poslana 
-         Provjeri rezervaciju na stranici za odobrenje!`,
+          `\nSmještaj: ${smjestajIme}\nMobilni broj: ${brojGosta}\nMail: ${mailGosta} je poslana\nProvjeri rezervaciju na stranici za odobrenje!`,
       },
       (err, info) => {
         console.log(info.envelope);
