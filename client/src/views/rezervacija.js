@@ -7,6 +7,7 @@ import Axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useHistory } from "react-router-dom";
+import { isEmail, isMobilePhone } from "validator";
 const Rezervacija = () => {
   //Locale za hrvatski prikaz datuma u kalendaru
   registerLocale("hr", hr);
@@ -51,17 +52,16 @@ const Rezervacija = () => {
     const imeGostaProvjera = imeGosta;
     const brojGostaProvjera = brojGosta;
     const noviErrori = {};
-    //regex za provjeru ispravnosti maila
-    const provjeraMaila =
-      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     //mail gosta ne smije biti blank ili prazan
     if (!mailGostaProvjera || mailGostaProvjera === "")
       noviErrori.mailGostaProvjera = " Polje ne može biti prazno!";
-    else if (!provjeraMaila.test(String(mailGosta).toLowerCase())) {
+    else if (!isEmail(String(mailGosta).toLowerCase())) {
       noviErrori.mailGostaProvjera = "Upišite korektan mail";
     }
     if (brojGostaProvjera === "") {
       noviErrori.brojGostaProvjera = "Polje broja ne smije biti prazno!";
+    } else if (!isMobilePhone(String(brojGosta))) {
+      noviErrori.brojGostaProvjera = "Upišite korektan broj mobitela";
     }
     if (imeGostaProvjera === "") {
       noviErrori.imeGostaProvjera = "Polje za ime ne smije biti prazno!";
@@ -241,9 +241,7 @@ const Rezervacija = () => {
               <Col sm="12">
                 <Form.Control
                   name="brojForma"
-                  type="number"
-                  min="0"
-                  onInput="this.value = Math.abs(this.value) > 0 ? Math.abs(this.value) : null"
+                  type="text"
                   className="brojForma"
                   onChange={(event) => setBrojGosta(event.target.value)}
                   isInvalid={!!errorForma.brojGostaProvjera}
@@ -278,11 +276,6 @@ const Rezervacija = () => {
                 </Form.Text>
               </Col>
             </Form.Group>
-            <Form.Group
-              as={Row}
-              type="number"
-              controlId="formBasickapacitetju"
-            ></Form.Group>
             <Col sm="12 text-center">
               <Button
                 variant="success"
