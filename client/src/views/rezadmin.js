@@ -49,32 +49,34 @@ function RezervacijaAdmin() {
     getUserMetadata();
   }, [user.sub, getAccessTokenSilently]);
   const deleteRezervacija = (id) => {
-    Axios.delete(`/rezervacijadelete/${id}`).then((response) =>
-      toast.dark("❌" + response.data, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      })
+    Axios.delete(`/rezervacijadelete/${id}`).then(
+      (response) =>
+        toast.dark("❌" + response.data, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        }),
+      history.push("/rezervacijaadmin")
     );
-    history.push("/rezervacijaadmin");
   };
   const odobriRezervaciju = (id) => {
-    Axios.put(`/rezervacijaodobri/${id}`).then((response) =>
-      toast.dark("✔️" + response.data, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-      })
+    Axios.put(`/rezervacijaodobri/${id}`).then(
+      (response) =>
+        toast.dark("✔️" + response.data, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        }),
+      history.push("/rezervacijaadmin")
     );
-    history.push("/rezervacijaadmin");
   };
   return (
     <div className="adminpanel">

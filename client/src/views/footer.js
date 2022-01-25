@@ -7,7 +7,7 @@ const Footer = () => {
     <footer className="footer text-center">
       <div className="logo" />
       <p>
-        Copyright @{moment(datum).format("YYYY")} | Robinzonski Kamp Lučica| Sva
+        Copyright {moment(datum).format("YYYY")} | Robinzonski Kamp Lučica| Sva
         prava zadržana{" "}
         <a
           style={{ color: "green" }}

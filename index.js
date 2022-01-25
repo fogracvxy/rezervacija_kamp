@@ -37,13 +37,10 @@ app.delete("/rezervacijadelete/:id", async (req, res) => {
 });
 app.put("/rezervacijaodobri/:id", async (req, res) => {
   try {
+    // Postgresql daje mogucnost da nakon updejta vratimo updejtano
     const { id } = req.params;
-    await pool.query("UPDATE reservations SET odobreno = true WHERE id = $1", [
-      id,
-    ]);
-
     const getReservations = await pool.query(
-      "SELECT *, lower(reservation_dates) as t_start, upper(reservation_dates) AS t_end FROM reservations where id=$1",
+      "UPDATE reservations SET odobreno = true WHERE id = $1 RETURNING *,lower(reservation_dates) as t_start, upper(reservation_dates) AS t_end ",
       [id]
     );
     let transporter = nodemailer.createTransport({
