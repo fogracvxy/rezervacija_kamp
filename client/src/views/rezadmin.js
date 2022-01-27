@@ -7,7 +7,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { ToastContainer, toast } from "react-toastify";
 import ReactToPrint from "react-to-print";
 import { FiPrinter } from "react-icons/fi";
-import { FaUserAlt } from "react-icons/fa";
+import { FaUserAlt, FaTrashAlt, FaTimesCircle } from "react-icons/fa";
 function RezervacijaAdmin() {
   const { user, getAccessTokenSilently } = useAuth0();
   const [userMetadata, setUserMetadata] = useState(null);
@@ -15,6 +15,7 @@ function RezervacijaAdmin() {
   const [rezervacijaList, setRezervacijaList] = useState([]);
   const [danasDatum] = useState(new Date());
   const componentRef = useRef();
+  let [modeBrisanje, setModeBrisanje] = useState(false);
   useEffect(() => {
     Axios.get("/rezervacijelista").then((response) => {
       setRezervacijaList(response.data);
@@ -157,16 +158,25 @@ function RezervacijaAdmin() {
                     {moment(val.created_at).format("DD.MM.YYYY.")}
                   </td>
                   <td className="mogucnostiButton text-center">
-                    {val.odobreno ? (
+                    {modeBrisanje === false ? (
+                      val.odobreno === true ? (
+                        <Button
+                          variant="outline-danger"
+                          onClick={() => deleteRezervacija(val.id)}
+                        >
+                          Obriši rezervaciju
+                        </Button>
+                      ) : (
+                        <Button onClick={() => odobriRezervaciju(val.id)}>
+                          Odobri rezervaciju
+                        </Button>
+                      )
+                    ) : (
                       <Button
                         variant="outline-danger"
                         onClick={() => deleteRezervacija(val.id)}
                       >
                         Obriši rezervaciju
-                      </Button>
-                    ) : (
-                      <Button onClick={() => odobriRezervaciju(val.id)}>
-                        Odobri rezervaciju
                       </Button>
                     )}
                   </td>
@@ -178,6 +188,21 @@ function RezervacijaAdmin() {
       </div>
       {/* Dio za printanje tablice rezervacije*/}
       <div className="text-right mt-5">
+        {modeBrisanje === false ? (
+          <Button
+            className="buttonBrisanje"
+            onClick={() => setModeBrisanje(true)}
+          >
+            <FaTrashAlt size={35} />
+          </Button>
+        ) : (
+          <Button
+            className="buttonBrisanje"
+            onClick={() => setModeBrisanje(false)}
+          >
+            <FaTimesCircle size={35} />
+          </Button>
+        )}
         <ReactToPrint
           bodyClass="naslovrezervacija"
           documentTitle={

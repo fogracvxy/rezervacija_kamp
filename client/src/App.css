@@ -184,7 +184,10 @@ body {
 .btn-outline-success:focus {
   box-shadow: 0px 0px 0px 1px rgba(0, 0, 0, 0.75) !important;
 }
-
+.buttonBrisanje {
+  background-color: red !important;
+  margin-right: 5px;
+}
 @media (min-width: 576px) {
   .container {
     max-width: inherit;
