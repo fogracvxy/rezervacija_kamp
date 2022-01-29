@@ -15,6 +15,7 @@ function RezervacijaAdmin() {
   const [rezervacijaList, setRezervacijaList] = useState([]);
   const [danasDatum] = useState(new Date());
   const componentRef = useRef();
+  //Varijabla za setiranje true ili false mjenjanje moda za brisnanje rezervacije
   let [modeBrisanje, setModeBrisanje] = useState(false);
   useEffect(() => {
     Axios.get("/rezervacijelista").then((response) => {
@@ -158,27 +159,30 @@ function RezervacijaAdmin() {
                     {moment(val.created_at).format("DD.MM.YYYY.")}
                   </td>
                   <td className="mogucnostiButton text-center">
-                    {modeBrisanje === false ? (
-                      val.odobreno === true ? (
+                    {
+                      //prikaz gumba za brisanje i odobrenje rezervacije ovisno o stanju "modeBrisanja" varijable
+                      modeBrisanje === false ? (
+                        val.odobreno === true ? (
+                          <Button
+                            variant="outline-danger"
+                            onClick={() => deleteRezervacija(val.id)}
+                          >
+                            Obriši rezervaciju
+                          </Button>
+                        ) : (
+                          <Button onClick={() => odobriRezervaciju(val.id)}>
+                            Odobri rezervaciju
+                          </Button>
+                        )
+                      ) : (
                         <Button
                           variant="outline-danger"
                           onClick={() => deleteRezervacija(val.id)}
                         >
                           Obriši rezervaciju
                         </Button>
-                      ) : (
-                        <Button onClick={() => odobriRezervaciju(val.id)}>
-                          Odobri rezervaciju
-                        </Button>
                       )
-                    ) : (
-                      <Button
-                        variant="outline-danger"
-                        onClick={() => deleteRezervacija(val.id)}
-                      >
-                        Obriši rezervaciju
-                      </Button>
-                    )}
+                    }
                   </td>
                 </tr>
               );
