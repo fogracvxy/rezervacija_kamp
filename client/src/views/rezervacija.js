@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
-import { Form, Col, Row, Button, Container } from "react-bootstrap";
+import { Form, Col, Row, Button } from "react-bootstrap";
 import "react-datepicker/dist/react-datepicker.css";
 import { hr } from "date-fns/locale";
 import Axios from "axios";
@@ -155,148 +155,146 @@ const Rezervacija = () => {
       />
       <h1 className="text-center">Rezervacija</h1>
       <hr />
-      <Container className="rezervacijaforma">
-        <Row>
-          <Form className="mb-5" ref={formRef} validated={validated}>
-            <Col sm="12">
-              <Form.Group controlId="formGridState">
-                <Form.Label>Smještaj</Form.Label>
-                <Form.Control
-                  className="smjestajForma"
-                  name="smjestajForma"
-                  required
-                  as="select"
-                  defaultValue="0"
-                  isInvalid={!!errorForma.smjestajImeProvjera}
-                  onChange={(event) => setSmjestajIme(event.target.value)}
-                >
-                  <option>Odaberite...</option>
-                  {smjestajList.map((val, key) => {
-                    return (
-                      <option key={key} value={val.id}>
-                        {val.room_name}
-                      </option>
-                    );
-                  })}
-                </Form.Control>
-                <Form.Control.Feedback type="invalid">
-                  {errorForma.smjestajImeProvjera}
-                </Form.Control.Feedback>
-                <Form.Text className="text-muted">
-                  Odabir smještaja koji rezervirate
-                  <br />
-                  <span style={{ color: "red" }}>
-                    {" "}
-                    *odabire se prije odabira datuma
-                  </span>
-                </Form.Text>
-              </Form.Group>
-            </Col>
+      <Row>
+        <Form className="mb-5" ref={formRef} validated={validated}>
+          <Col sm="12">
+            <Form.Group controlId="formGridState">
+              <Form.Label>Smještaj</Form.Label>
+              <Form.Control
+                className="smjestajForma"
+                name="smjestajForma"
+                required
+                as="select"
+                defaultValue="0"
+                isInvalid={!!errorForma.smjestajImeProvjera}
+                onChange={(event) => setSmjestajIme(event.target.value)}
+              >
+                <option>Odaberite...</option>
+                {smjestajList.map((val, key) => {
+                  return (
+                    <option key={key} value={val.id}>
+                      {val.room_name}
+                    </option>
+                  );
+                })}
+              </Form.Control>
+              <Form.Control.Feedback type="invalid">
+                {errorForma.smjestajImeProvjera}
+              </Form.Control.Feedback>
+              <Form.Text className="text-muted">
+                Odabir smještaja koji rezervirate
+                <br />
+                <span style={{ color: "red" }}>
+                  {" "}
+                  *odabire se prije odabira datuma
+                </span>
+              </Form.Text>
+            </Form.Group>
+          </Col>
 
-            {smjestajIme !== "Odaberite..." ? (
-              <Col md={12}>
-                {" "}
-                <Col md={12} className="text-center">
-                  <h5>Odaberite datum dolaska i datum odlaska</h5>
-                  <DatePicker
-                    dateFormat="dd.MM.yyyy."
-                    wrapperClassName="datePicker"
-                    selected={pocetniDatum}
-                    onChange={onChange}
-                    startDate={pocetniDatum}
-                    endDate={krajniDatum}
-                    excludeDates={poljeDatuma}
-                    locale="hr"
-                    selectsRange
-                    inline
-                    isClearable
-                    placeholderText="Odaberite datum"
-                  />
-                  <h6>
-                    <span style={{ color: "red" }}>*</span>crveno su označeni
-                    zauzeti datumi za odabrani smještaj <br />
-                    *za odabir jednog datuma kliknite dva puta na isti datum
-                  </h6>{" "}
-                </Col>
-                <Form.Group controlId="formBasicName">
-                  <Form.Label column sm="12">
-                    Ime i prezime
-                  </Form.Label>
-                  <Col sm="12">
-                    <Form.Control
-                      name="imeForma"
-                      type="text"
-                      className="imeForma"
-                      onChange={(event) => setImeGosta(event.target.value)}
-                      isInvalid={!!errorForma.imeGostaProvjera}
-                      required
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errorForma.imeGostaProvjera}
-                    </Form.Control.Feedback>
-                    <Form.Text className="text-muted">
-                      Vaše ime i prezime
-                    </Form.Text>
-                  </Col>
-                </Form.Group>
-                <Form.Group controlId="formBasicName">
-                  <Form.Label column sm="12">
-                    Broj telefona/mobitela
-                  </Form.Label>
-                  <Col sm="12">
-                    <Form.Control
-                      name="brojForma"
-                      type="text"
-                      className="brojForma"
-                      onChange={(event) => setBrojGosta(event.target.value)}
-                      isInvalid={!!errorForma.brojGostaProvjera}
-                      required
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errorForma.brojGostaProvjera}
-                    </Form.Control.Feedback>
-                    <Form.Text className="text-muted">
-                      Vaš broj telefona/mobitela
-                    </Form.Text>
-                  </Col>
-                </Form.Group>
-                <Form.Group controlId="formBasicEmail">
-                  <Form.Label column sm="12">
-                    Mail adresa
-                  </Form.Label>
-                  <Col sm="12">
-                    <Form.Control
-                      name="mailForma"
-                      type="email"
-                      className="mailForma"
-                      onChange={(event) => setMailGost(event.target.value)}
-                      isInvalid={!!errorForma.mailGostaProvjera}
-                      required
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errorForma.mailGostaProvjera}
-                    </Form.Control.Feedback>
-                    <Form.Text className="text-muted">
-                      Email za rezervaciju.
-                    </Form.Text>
-                  </Col>
-                </Form.Group>
-                <Col sm="12 text-center">
-                  <Button
-                    variant="success"
-                    type="submit"
-                    onClick={terminRezervacija}
-                  >
-                    Rezerviraj
-                  </Button>
-                </Col>
+          {smjestajIme !== "Odaberite..." ? (
+            <Col md={12}>
+              {" "}
+              <Col md={12} className="text-center">
+                <h5>Odaberite datum dolaska i datum odlaska</h5>
+                <DatePicker
+                  dateFormat="dd.MM.yyyy."
+                  wrapperClassName="datePicker"
+                  selected={pocetniDatum}
+                  onChange={onChange}
+                  startDate={pocetniDatum}
+                  endDate={krajniDatum}
+                  excludeDates={poljeDatuma}
+                  locale="hr"
+                  selectsRange
+                  inline
+                  isClearable
+                  placeholderText="Odaberite datum"
+                />
+                <h6>
+                  <span style={{ color: "red" }}>*</span>crveno su označeni
+                  zauzeti datumi za odabrani smještaj <br />
+                  *za odabir jednog datuma kliknite dva puta na isti datum
+                </h6>{" "}
               </Col>
-            ) : (
-              <Col md={12} className="text-center"></Col>
-            )}
-          </Form>
-        </Row>
-      </Container>
+              <Form.Group controlId="formBasicName">
+                <Form.Label column sm="12">
+                  Ime i prezime
+                </Form.Label>
+                <Col sm="12">
+                  <Form.Control
+                    name="imeForma"
+                    type="text"
+                    className="imeForma"
+                    onChange={(event) => setImeGosta(event.target.value)}
+                    isInvalid={!!errorForma.imeGostaProvjera}
+                    required
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errorForma.imeGostaProvjera}
+                  </Form.Control.Feedback>
+                  <Form.Text className="text-muted">
+                    Vaše ime i prezime
+                  </Form.Text>
+                </Col>
+              </Form.Group>
+              <Form.Group controlId="formBasicName">
+                <Form.Label column sm="12">
+                  Broj telefona/mobitela
+                </Form.Label>
+                <Col sm="12">
+                  <Form.Control
+                    name="brojForma"
+                    type="text"
+                    className="brojForma"
+                    onChange={(event) => setBrojGosta(event.target.value)}
+                    isInvalid={!!errorForma.brojGostaProvjera}
+                    required
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errorForma.brojGostaProvjera}
+                  </Form.Control.Feedback>
+                  <Form.Text className="text-muted">
+                    Vaš broj telefona/mobitela
+                  </Form.Text>
+                </Col>
+              </Form.Group>
+              <Form.Group controlId="formBasicEmail">
+                <Form.Label column sm="12">
+                  Mail adresa
+                </Form.Label>
+                <Col sm="12">
+                  <Form.Control
+                    name="mailForma"
+                    type="email"
+                    className="mailForma"
+                    onChange={(event) => setMailGost(event.target.value)}
+                    isInvalid={!!errorForma.mailGostaProvjera}
+                    required
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errorForma.mailGostaProvjera}
+                  </Form.Control.Feedback>
+                  <Form.Text className="text-muted">
+                    Email za rezervaciju.
+                  </Form.Text>
+                </Col>
+              </Form.Group>
+              <Col sm="12 text-center">
+                <Button
+                  variant="success"
+                  type="submit"
+                  onClick={terminRezervacija}
+                >
+                  Rezerviraj
+                </Button>
+              </Col>
+            </Col>
+          ) : (
+            <Col md={12} className="text-center"></Col>
+          )}
+        </Form>
+      </Row>
     </div>
   );
 };
