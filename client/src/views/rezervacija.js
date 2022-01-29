@@ -20,7 +20,7 @@ const Rezervacija = () => {
   const [krajniDatum, setKrajniDatum] = useState(
     new Date(new Date().valueOf() + 1000 * 3600 * 24)
   );
-  const [smjestajIme, setSmjestajIme] = useState("");
+  const [smjestajIme, setSmjestajIme] = useState("Odaberite...");
   const [smjestajList, setSmjestajList] = useState([]);
   const [datumiList, setDatumiList] = useState([]);
   const [validated, setValidated] = useState(false);
