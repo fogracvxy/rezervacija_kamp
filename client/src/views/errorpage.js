@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import Logo from "../images/logo.png";
 const ErrorPage = () => {
   return (
-    <div className="errorpage text-center">
+    <div className="errorpage text-center d-flex flex-column min-vh-100 ">
       <Row>
         <Col sm={12}>
           <div className="text-center">

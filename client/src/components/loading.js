@@ -1,10 +1,9 @@
 import React from "react";
-import Loader from "react-loader-spinner";
+import { Rings } from "react-loader-spinner";
 const Loading = () => {
   return (
     <div className="spinner text-center">
-      <Loader
-        type="Rings"
+      <Rings
         color="#bfaa72"
         height="100%"
         width="100%"

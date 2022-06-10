@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Table, Button, Image, Col, Row } from "react-bootstrap";
 import Axios from "axios";
-import { useHistory } from "react-router-dom";
 import moment from "moment";
 import { useAuth0 } from "@auth0/auth0-react";
 import { ToastContainer, toast } from "react-toastify";
@@ -11,7 +10,6 @@ import { FaUserAlt, FaTrashAlt, FaTimesCircle } from "react-icons/fa";
 function RezervacijaAdmin() {
   const { user, getAccessTokenSilently } = useAuth0();
   const [userMetadata, setUserMetadata] = useState(null);
-  const history = useHistory();
   const [rezervacijaList, setRezervacijaList] = useState([]);
   const [danasDatum] = useState(new Date());
   const componentRef = useRef();
@@ -50,42 +48,47 @@ function RezervacijaAdmin() {
 
     getUserMetadata();
   }, [user.sub, getAccessTokenSilently]);
+
   const deleteRezervacija = (id) => {
     Axios.delete(`/rezervacijadelete/${id}`).then(
       (response) =>
-        toast.dark("❌" + response.data, {
+        toast("❌" + response.data, {
           position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
+          autoClose: 3000,
+          hideProgressBar: true,
           closeOnClick: true,
           pauseOnHover: true,
           draggable: true,
           progress: undefined,
         }),
-      history.push("/rezervacijaadmin")
+      Axios.get("/rezervacijelista").then((response) => {
+        setRezervacijaList(response.data);
+      })
     );
   };
   const odobriRezervaciju = (id) => {
     Axios.put(`/rezervacijaodobri/${id}`).then(
       (response) =>
-        toast.dark("✔️" + response.data, {
+        toast("✔️" + response.data, {
           position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
+          autoClose: 3000,
+          hideProgressBar: true,
           closeOnClick: true,
           pauseOnHover: true,
           draggable: true,
           progress: undefined,
         }),
-      history.push("/rezervacijaadmin")
+      Axios.get("/rezervacijelista").then((response) => {
+        setRezervacijaList(response.data);
+      })
     );
   };
   return (
-    <div className="adminpanel">
+    <div className="adminpanel d-flex flex-column min-vh-100">
       <ToastContainer
-        position="bottom-right"
-        autoClose={5000}
-        hideProgressBar={false}
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar
         newestOnTop={false}
         closeOnClick
         rtl={false}

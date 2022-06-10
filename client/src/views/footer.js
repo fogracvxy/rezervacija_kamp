@@ -4,7 +4,7 @@ import { FaFacebook, FaInstagram, FaMapMarkerAlt } from "react-icons/fa";
 const Footer = () => {
   const datum = Date();
   return (
-    <footer className="footer text-center">
+    <footer className="footer text-center ">
       <div className="logo" />
       <p>
         Copyright {moment(datum).format("YYYY")} | Robinzonski Kamp Lučica| Sva

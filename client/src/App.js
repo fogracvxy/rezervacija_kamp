@@ -1,12 +1,13 @@
 import { Container } from "react-bootstrap";
 import "./App.css";
-import { Route, Switch, Redirect } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import {
   Pocetna,
   Footer,
   Rezervacija,
   RezervacijaAdmin,
   ErrorPage,
+  Statistics,
 } from "./views";
 import { Meta } from "./components";
 import { Navig, Loading } from "./components/index";
@@ -25,16 +26,20 @@ function App() {
       <Meta />
       <Navig />
       <Container className="flex-grow-1 mt-5">
-        <Switch>
-          <Route path="/" exact component={Pocetna} />
-          <Route path="/rezervacija" component={Rezervacija} />
-          <ProtectedRoute
+        <Routes>
+          <Route path="/" element={<Pocetna />} />
+          <Route path="/rezervacija" element={<Rezervacija />} />
+          <Route
             path="/rezervacijaadmin"
-            component={RezervacijaAdmin}
+            element={<ProtectedRoute component={RezervacijaAdmin} />}
           />
-          <Route path="/404" component={ErrorPage} />
-          <Redirect to="/404" />
-        </Switch>
+          <Route
+            path="/stats"
+            element={<ProtectedRoute component={Statistics} />}
+          />
+          <Route path="/404" element={<ErrorPage />} />
+          <Route path="*" element={<Navigate to="/404" replace />} />
+        </Routes>
       </Container>
       <Footer />
       <CookieConsent buttonText="Slažem se!">

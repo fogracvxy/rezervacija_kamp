@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Nav, Navbar, Container } from "react-bootstrap";
-import { NavLink as RouterNavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import LogoutButton from "./logoutbutton";
 import LoginButton from "./loginbutton";
@@ -11,33 +11,33 @@ const Navig = () => {
   const Navigacija = () => {
     return (
       <Nav className="mr-auto">
-        <Nav.Link
+        <NavLink
           onClick={() => setExpanded(false)}
-          as={RouterNavLink}
           to="/"
-          exact
-          activeClassName="router-link-exact-active"
+          className={(navData) =>
+            navData.isActive ? "nav-link router-link-exact-active" : "nav-link"
+          }
         >
           Početna
-        </Nav.Link>
-        <Nav.Link
+        </NavLink>
+        <NavLink
           onClick={() => setExpanded(false)}
-          as={RouterNavLink}
           to="/rezervacija"
-          exact
-          activeClassName="router-link-exact-active"
+          className={(navData) =>
+            navData.isActive ? "nav-link router-link-exact-active" : "nav-link"
+          }
         >
           Rezervacija
-        </Nav.Link>
-        <Nav.Link
-          onClick={() => setExpanded(false)}
-          as={RouterNavLink}
-          to={{ pathname: "https://robinzonlucica.hr/" }}
+        </NavLink>
+        <a
+          style={{ textDecoration: "none", color: "black" }}
+          className="mt-2"
+          href="https://robinzonlucica.hr/"
+          rel="noreferrer"
           target="_blank"
-          activeClassName="router-link-exact-active"
         >
           Web
-        </Nav.Link>
+        </a>
       </Nav>
     );
   };
@@ -46,16 +46,33 @@ const Navig = () => {
     return (
       <Nav>
         {isAuthenticated && (
-          // onClick setExpanded kako bi zatvorili navigaciju
-          <Nav.Link
-            onClick={() => setExpanded(false)}
-            as={RouterNavLink}
-            to="/rezervacijaadmin"
-            exact
-            activeClassName="router-link-exact-active"
-          >
-            Admin
-          </Nav.Link>
+          <>
+            <NavLink
+              className={(navData) =>
+                navData.isActive
+                  ? "nav-link router-link-exact-active"
+                  : "nav-link"
+              }
+              onClick={() => setExpanded(false)}
+              to="/stats"
+              exact
+            >
+              Stats
+            </NavLink>
+
+            <NavLink
+              className={(navData) =>
+                navData.isActive
+                  ? "nav-link router-link-exact-active"
+                  : "nav-link"
+              }
+              onClick={() => setExpanded(false)}
+              to="/rezervacijaadmin"
+              exact
+            >
+              Admin
+            </NavLink>
+          </>
         )}
         <div className="justify-content-center">
           {isAuthenticated ? <LogoutButton /> : <LoginButton />}
@@ -65,16 +82,16 @@ const Navig = () => {
   };
   return (
     <div>
-      <Navbar expanded={expanded} collapseOnSelect bg="light" expand="lg">
+      <Navbar className="navigacija_sve" expanded={expanded} collapseOnSelect bg="light" expand="lg">
         <Container>
-          <Navbar.Brand as={RouterNavLink} className="logo" to="/" />
+          <Navbar.Brand as={NavLink} className="logo" to="/" />
           <Navbar.Toggle
             onClick={() => setExpanded(expanded ? false : "expanded")}
             aria-controls="responsive-navbar-nav"
           />
           <Navbar.Collapse id="responsive-navbar-nav">
             <Navigacija />
-            <NavigacijaAuth />
+            <NavigacijaAuth  className="navigacija_auth"/>
           </Navbar.Collapse>
         </Container>
       </Navbar>

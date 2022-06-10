@@ -21,7 +21,7 @@
     "moment": "^2.29.1",
     "mongoose": "^5.12.4",
     "nodemailer": "^6.7.2",
-    "nodemon": "^2.0.7",
+    "nodemon": "^2.0.16",
     "pg": "^8.6.0",
     "pg-range": "^1.1.0"
   }

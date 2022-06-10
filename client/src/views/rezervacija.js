@@ -6,12 +6,17 @@ import { hr } from "date-fns/locale";
 import Axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { isEmail, isMobilePhone } from "validator";
+import "react-phone-number-input/style.css";
+import PhoneInput, {
+  isPossiblePhoneNumber,
+  isValidPhoneNumber,
+} from "react-phone-number-input";
 const Rezervacija = () => {
   //Locale za hrvatski prikaz datuma u kalendaru
   registerLocale("hr", hr);
-  const history = useHistory();
+  const navigate = useNavigate();
   const [mailGosta, setMailGost] = useState("");
   const [imeGosta, setImeGosta] = useState("");
   const [brojGosta, setBrojGosta] = useState("");
@@ -58,10 +63,8 @@ const Rezervacija = () => {
     else if (!isEmail(String(mailGosta).toLowerCase())) {
       noviErrori.mailGostaProvjera = "Upišite korektan mail";
     }
-    if (brojGostaProvjera === "") {
-      noviErrori.brojGostaProvjera = "Polje broja ne smije biti prazno!";
-    } else if (!isMobilePhone(String(brojGosta))) {
-      noviErrori.brojGostaProvjera = "Upišite korektan broj mobitela";
+    if (!isValidPhoneNumber(brojGosta)) {
+      noviErrori.brojGostaProvjera = "Unesite korektan broj!";
     }
     if (imeGostaProvjera === "") {
       noviErrori.imeGostaProvjera = "Polje za ime ne smije biti prazno!";
@@ -90,10 +93,10 @@ const Rezervacija = () => {
         krajniDatum: krajniDatum,
         smjestajIme: Number(smjestajIme),
       }).then((response) =>
-        toast.dark(response.data, {
+        toast(response.data, {
           position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
+          autoClose: 3000,
+          hideProgressBar: true,
           closeOnClick: true,
           pauseOnHover: true,
           draggable: true,
@@ -109,10 +112,11 @@ const Rezervacija = () => {
       // je moguce rezervirati bez upisa jer vrijednosti ostanu u stateu
       setMailGost("");
       setSmjestajIme("");
+      setBrojGosta("");
       setPocetniDatum(new Date());
       setKrajniDatum(new Date(new Date().valueOf() + 1000 * 3600 * 24));
       //vracanje na rezervaciju
-      history.push("/rezervacija");
+      navigate("/rezervacija");
     }
   };
   //onChange handler za spremanje pocetnog i zavrsnog datuma iz react.datepickera
@@ -139,13 +143,14 @@ const Rezervacija = () => {
     }
     return null;
   });
+  console.log(brojGosta);
   //prikaz
   return (
-    <div className="rezervacija">
+    <div className="rezervacija d-flex flex-column min-vh-100">
       <ToastContainer
-        position="bottom-right"
-        autoClose={5000}
-        hideProgressBar={false}
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar
         newestOnTop={false}
         closeOnClick
         rtl={false}
@@ -243,17 +248,31 @@ const Rezervacija = () => {
                   Broj telefona/mobitela
                 </Form.Label>
                 <Col sm="12">
-                  <Form.Control
+                  <PhoneInput
                     name="brojForma"
                     type="text"
-                    className="brojForma"
-                    onChange={(event) => setBrojGosta(event.target.value)}
-                    isInvalid={!!errorForma.brojGostaProvjera}
-                    required
+                    placeholder="Unesite broj mobitela"
+                    value={brojGosta}
+                    onChange={setBrojGosta}
+                    error={
+                      brojGosta
+                        ? isValidPhoneNumber(brojGosta)
+                          ? undefined
+                          : "Invalid phone number"
+                        : "Phone number required"
+                    }
                   />
-                  <Form.Control.Feedback type="invalid">
+                  <p
+                    style={{
+                      width: "100%",
+                      marginTop: "0.25rem",
+                      fontSize: "80%",
+                      color: "#dc3545",
+                    }}
+                  >
                     {errorForma.brojGostaProvjera}
-                  </Form.Control.Feedback>
+                  </p>
+
                   <Form.Text className="text-muted">
                     Vaš broj telefona/mobitela
                   </Form.Text>
