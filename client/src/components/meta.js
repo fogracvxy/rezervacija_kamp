@@ -22,10 +22,7 @@ const Meta = () => {
           property="og:image"
           content="https://robinzonlucica.hr/Slike/galerija/DSC_1673.jpg"
         />
-        <link
-          rel="canonical"
-          href="https://rezervacija-lucica.herokuapp.com/"
-        />
+        <link rel="canonical" href="https://robinzonlucica.hr/" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Helmet>
     </div>

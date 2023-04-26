@@ -1,37 +1,49 @@
-import React from "react";
-import moment from "moment";
-import { FaFacebook, FaInstagram, FaMapMarkerAlt } from "react-icons/fa";
+import React, { memo } from "react";
+import {
+  ButtonGroup,
+  Grid,
+  IconButton,
+  GridItem,
+  Text,
+  Center,
+} from "@chakra-ui/react";
+import { FaInstagram, FaFacebook, FaTwitter } from "react-icons/fa";
+// import Logo from "../assets/logo.png";
+import "./footer.css";
 const Footer = () => {
-  const datum = Date();
   return (
-    <footer className="footer text-center ">
-      <div className="logo" />
-      <p>
-        Copyright {moment(datum).format("YYYY")} | Robinzonski Kamp Lučica| Sva
-        prava zadržana{" "}
-        <a
-          style={{ color: "green" }}
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://github.com/fogracvxy/"
-        >
-          <br /> Marin Spudić
-        </a>
-      </p>
-      <h4 className="footerikone">
-        {" "}
-        <a href="https://www.facebook.com/robinzonlucica/">
-          <FaFacebook />
-        </a>
-        <a href="https://www.instagram.com/robinzonlucica/">
-          <FaInstagram />
-        </a>
-        <a href="https://goo.gl/maps/4KEa1KxUtjLtFY4b6">
-          <FaMapMarkerAlt />
-        </a>
-      </h4>
-    </footer>
+    <Grid py={10} className="Footer" templateColumns="repeat(12,1fr)">
+      <GridItem colSpan={12}>
+        <Center>
+          {/*  <img src={Logo} className="logologin" alt="logo lucica" /> */}
+        </Center>
+        <ButtonGroup variant="ghost">
+          <IconButton
+            as="a"
+            href="#"
+            aria-label="Facebook"
+            icon={<FaFacebook fontSize="1.25rem" />}
+          />
+          <IconButton
+            as="a"
+            href="#"
+            aria-label="Instagram"
+            icon={<FaInstagram fontSize="1.25rem" />}
+          />
+          <IconButton
+            as="a"
+            href="#"
+            aria-label="Twitter"
+            icon={<FaTwitter fontSize="1.25rem" />}
+          />
+        </ButtonGroup>
+        <Text textAlign="center" fontSize="sm" color="subtle">
+          &copy; {new Date().getFullYear()} | Robinzonski Kamp Lučica | Sva
+          prava zadržana
+        </Text>
+      </GridItem>
+    </Grid>
   );
 };
 
-export default Footer;
+export default memo(Footer);

@@ -4,6 +4,8 @@ import Rezervacija from "./rezervacija";
 import RezervacijaAdmin from "./rezadmin";
 import ErrorPage from "./errorpage";
 import Statistics from "./statistics";
+import LoginPage from "./loginpage";
+import SignUp from "./registerpage";
 export {
   Pocetna,
   Footer,
@@ -11,4 +13,6 @@ export {
   RezervacijaAdmin,
   ErrorPage,
   Statistics,
+  SignUp,
+  LoginPage,
 };

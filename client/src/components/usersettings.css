@@ -1,0 +1,19 @@
+/* .usersettings__profilepic {
+  margin-bottom: 15px;
+  margin-right: 20px;
+}
+.usersettings__modalbody {
+  margin: 25px;
+} */
+.usersettings__fileupload {
+  cursor: pointer;
+  padding: 6px;
+  margin-right: 10px;
+}
+.usersettings__fileupload::file-selector-button {
+  display: none;
+}
+
+.usersettings__fileupload:hover {
+  color: #65842e;
+}

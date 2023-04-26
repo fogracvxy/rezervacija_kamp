@@ -1,4 +1,4 @@
-import React from "react";
+/* import React from "react";
 import { Button, Col, Row } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import Logo from "../images/logo.png";
@@ -33,3 +33,4 @@ const ErrorPage = () => {
 };
 
 export default ErrorPage;
+ */

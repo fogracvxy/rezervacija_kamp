@@ -4,7 +4,7 @@ const Loading = () => {
   return (
     <div className="spinner text-center">
       <Rings
-        color="#bfaa72"
+        color="#698A2E"
         height="100%"
         width="100%"
         timeout={5000} //3 secs

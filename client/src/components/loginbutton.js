@@ -1,14 +1,18 @@
 import React from "react";
-import { useAuth0 } from "@auth0/auth0-react";
-import { Button } from "react-bootstrap";
+import { Button } from "@chakra-ui/react";
+import { useNavigate } from "react-router";
+
 const LoginButton = () => {
-  const { loginWithRedirect } = useAuth0();
+  const navigate = useNavigate();
+  const handleLogin = () => {
+    navigate("/login");
+  };
   return (
     <div>
       <Button
-        onClick={() => loginWithRedirect()}
-        variant="primary"
-        className="btn-margin "
+        onClick={() => handleLogin()}
+        borderRadius="full"
+        style={{ backgroundColor: "#DC4A2C", color: "white" }}
       >
         Login
       </Button>

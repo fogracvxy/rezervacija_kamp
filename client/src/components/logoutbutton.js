@@ -1,11 +1,28 @@
-import React from "react";
-import { useAuth0 } from "@auth0/auth0-react";
-import { Button } from "react-bootstrap";
+import React, { useContext } from "react";
+import { useNavigate } from "react-router";
+import { Button } from "@chakra-ui/react";
+import { AccountContext } from "./AccountContext";
 const LogoutButton = () => {
-  const { logout } = useAuth0();
+  const { setUser } = useContext(AccountContext);
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    fetch("/auth/logout", {
+      method: "GET",
+      credentials: "include",
+    })
+      .then(() => {})
+      .then(() => {
+        setUser({ loggedIn: false });
+        navigate("/"); // navigate nakon logouta
+      });
+  };
   return (
     <div>
-      <Button className="btn-margin" onClick={() => logout()} variant="danger">
+      <Button
+        className="btn-margin"
+        onClick={() => handleLogout()}
+        variant="danger"
+      >
         Logout
       </Button>
     </div>
