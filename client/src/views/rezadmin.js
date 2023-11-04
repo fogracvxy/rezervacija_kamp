@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  useCallback,
+  useMemo,
+} from "react";
 import Axios from "axios";
 import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -6,19 +13,10 @@ import { Calendar, momentLocalizer } from "react-big-calendar";
 import { ToastContainer, toast } from "react-toastify";
 import ReactToPrint from "react-to-print";
 import { FiPrinter } from "react-icons/fi";
-import { FaUserAlt, FaTrashAlt, FaTimesCircle } from "react-icons/fa";
-import { AccountContext } from "../components/AccountContext";
+import { FaTrashAlt, FaTimesCircle } from "react-icons/fa";
 import "moment/locale/hr";
 import {
   Button,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableCaption,
-  TableContainer,
   Box,
   Text,
   chakra,
@@ -31,6 +29,13 @@ import {
   Input,
   InputRightElement,
   Select,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
 } from "@chakra-ui/react";
 
 import { TiDelete } from "react-icons/ti";
@@ -43,16 +48,34 @@ function RezervacijaAdmin() {
   const componentRef = useRef();
   //Varijabla za setiranje true ili false mjenjanje moda za brisnanje rezervacije
   let [modeBrisanje, setModeBrisanje] = useState(false);
+
   useEffect(() => {
-    Axios.get("/auth/rezervacijelista").then((response) => {
-      setRezervacijaList(response.data);
-    });
+    Axios.get("/auth/rezervacijelista")
+      .then((response) => {
+        setRezervacijaList(response.data);
+      })
+      .catch((error) => {
+        console.error("An error occurred while fetching reservations:", error);
+        toast("⚠️ Failed to fetch reservations.", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          status: "error",
+        });
+      });
   }, []);
-  moment.locale("hr");
+
   const deleteRezervacija = (id) => {
-    Axios.delete(`/auth/rezervacijadelete/${id}`).then(
-      (response) =>
-        toast("❌" + response.data, {
+    Axios.delete(`/auth/rezervacijadelete/${id}`)
+      .then((response) => {
+        setRezervacijaList((prevList) =>
+          prevList.filter((rez) => rez.id !== id)
+        );
+        toast("❌ Reservation deleted successfully.", {
           position: "top-right",
           autoClose: 3000,
           hideProgressBar: true,
@@ -60,16 +83,32 @@ function RezervacijaAdmin() {
           pauseOnHover: true,
           draggable: true,
           progress: undefined,
-        }),
-      Axios.get("/auth/rezervacijelista").then((response) => {
-        setRezervacijaList(response.data);
+        });
       })
-    );
+      .catch((error) => {
+        console.error("An error occurred while deleting reservation:", error);
+        toast("⚠️ Failed to delete reservation.", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          status: "error",
+        });
+      });
   };
+
   const odobriRezervaciju = (id) => {
-    Axios.put(`/auth/rezervacijaodobri/${id}`).then(
-      (response) =>
-        toast("✔️" + response.data, {
+    Axios.put(`/auth/rezervacijaodobri/${id}`)
+      .then((response) => {
+        setRezervacijaList((prevList) =>
+          prevList.map((rez) =>
+            rez.id === id ? { ...rez, odobreno: true } : rez
+          )
+        );
+        toast("✔️ Reservation approved successfully.", {
           position: "top-right",
           autoClose: 3000,
           hideProgressBar: true,
@@ -77,12 +116,40 @@ function RezervacijaAdmin() {
           pauseOnHover: true,
           draggable: true,
           progress: undefined,
-        }),
-      Axios.get("/auth/rezervacijelista").then((response) => {
-        setRezervacijaList(response.data);
+        });
       })
-    );
+      .catch((error) => {
+        console.error("An error occurred while approving reservation:", error);
+        toast("⚠️ Failed to approve reservation.", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          status: "error",
+        });
+      });
   };
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedReservationId, setSelectedReservationId] = useState(null);
+
+  const onDeleteClick = (id) => {
+    setSelectedReservationId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsDeleteModalOpen(false);
+    setSelectedReservationId(null);
+  };
+
+  const confirmDelete = () => {
+    deleteRezervacija(selectedReservationId);
+    closeModal();
+  };
+  moment.locale("hr");
   const [searchTerm, setSearchTerm] = useState("");
   const [searchCategory, setSearchCategory] = useState("");
   const handleDeleteClick = () => {
@@ -90,40 +157,46 @@ function RezervacijaAdmin() {
   };
   const localizer = momentLocalizer(moment);
   function RezervacijaCalendar({ reservations }) {
-    const events = reservations.map((reservation) => {
-      const startDate = moment(reservation.t_start);
-      const endDate = moment(reservation.t_end);
-      const nights = endDate.diff(startDate, "days");
+    // Utility function for converting reservation times to events
+    const convertToEvent = (reservation) => {
+      const startDate = moment(reservation.t_start).toDate();
+      const endDate = moment(reservation.t_end).toDate();
+      const nights = moment(endDate).diff(startDate, "days");
 
       return {
         title: `${reservation.user_name} - Room: ${reservation.room_id}`,
-        start: startDate.toDate(),
-        end: endDate.toDate(),
+        start: startDate,
+        end: endDate,
         confirmed: reservation.odobreno,
-        reservation: reservation, // Add the entire reservation object to the event
-        nights: nights, // Add the number of nights to the event
-      };
-    });
-
-    const eventStyleGetter = (event, start, end, isSelected) => {
-      const style = {
-        backgroundColor: event.confirmed ? "green" : "#FF0200",
-        borderRadius: "0px",
-
-        color: "white",
-        border: "0px",
-        display: "block",
-      };
-
-      return {
-        style: style,
+        reservation, // Object shorthand can be used here
+        nights,
       };
     };
 
-    // Custom event renderer to include a tooltip
-    const customEvent = ({ event }) => {
+    // Memoized events array
+    const events = useMemo(
+      () => reservations.map(convertToEvent),
+      [reservations]
+    );
+
+    // Event style getter memoized
+    const eventStyleGetter = useCallback(
+      (event) => ({
+        style: {
+          backgroundColor: event.confirmed ? "green" : "#FF0200",
+          borderRadius: "0px",
+          color: "white",
+          border: "0px",
+          display: "block",
+        },
+      }),
+      []
+    );
+
+    // Custom event renderer memoized
+    const customEvent = useCallback(({ event }) => {
       const tooltipContent = (
-        <div>
+        <>
           <div>
             <strong>Email:</strong> {event.reservation.user_mail}
           </div>
@@ -134,7 +207,7 @@ function RezervacijaAdmin() {
             <strong>Nights:</strong> {event.nights}
           </div>
           {/* Add any additional details you want to display in the tooltip */}
-        </div>
+        </>
       );
 
       return (
@@ -142,7 +215,7 @@ function RezervacijaAdmin() {
           <div>{event.title}</div>
         </Tooltip>
       );
-    };
+    }, []);
 
     return (
       <div style={{ height: "500px", margin: "40px" }}>
@@ -155,12 +228,13 @@ function RezervacijaAdmin() {
           eventPropGetter={eventStyleGetter}
           firstDayOfWeek={1}
           components={{
-            event: customEvent, // Use the custom event renderer
+            event: customEvent,
           }}
         />
       </div>
     );
   }
+
   console.log(searchCategory);
   return (
     <div>
@@ -398,13 +472,12 @@ function RezervacijaAdmin() {
                         modeBrisanje === false ? (
                           user.odobreno === true ? (
                             <chakra.span className="mogucnostiButton">
-                              {" "}
                               <Button
                                 className="mogucnostiButton"
                                 _hover={{ bg: "red" }}
                                 bg="red"
                                 color="white"
-                                onClick={() => deleteRezervacija(user.id)}
+                                onClick={() => onDeleteClick(user.id)}
                               >
                                 Obriši rezervaciju
                               </Button>
@@ -429,7 +502,7 @@ function RezervacijaAdmin() {
                               _hover={{ bg: "red" }}
                               bg="red"
                               color="white"
-                              onClick={() => deleteRezervacija(user.id)}
+                              onClick={() => onDeleteClick(user.id)}
                             >
                               Obriši rezervaciju
                             </Button>
@@ -442,6 +515,25 @@ function RezervacijaAdmin() {
               })}
         </Stack>
       </Flex>
+      <Modal isOpen={isDeleteModalOpen} onClose={closeModal}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Potvrdite brisanje</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            Jeste li sigurni da želite obrisati ovu rezervaciju?
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="gray" mr={3} onClick={closeModal}>
+              Odustani
+            </Button>
+            <Button colorScheme="red" onClick={confirmDelete}>
+              Obriši
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Dio za printanje tablice rezervacije*/}
     </div>
   );

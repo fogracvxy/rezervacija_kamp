@@ -25,7 +25,13 @@ import {
 } from "@chakra-ui/react";
 import "./usersettings.css";
 import { MdOutlineAddPhotoAlternate } from "react-icons/md";
-import { FaLock, FaUser } from "react-icons/fa";
+import {
+  FaAddressCard,
+  FaCalendar,
+  FaLock,
+  FaMailBulk,
+  FaUser,
+} from "react-icons/fa";
 import { AccountContext } from "./AccountContext";
 import { Navigate } from "react-router-dom";
 const UserSettings = ({
@@ -142,7 +148,7 @@ const UserSettings = ({
       alert(errorData.error); // Replace this with a more user-friendly error handling
     }
   };
-
+  console.log(userInfo);
   return (
     <Modal size="xl" isOpen={isModalUserOpen} onClose={onCloseUserSettings}>
       <ModalOverlay />
@@ -174,7 +180,11 @@ const UserSettings = ({
                     <Button
                       mt={2}
                       mb={isMobile ? 4 : 0}
-                      colorScheme="red"
+                      bg="red"
+                      color="white"
+                      _hover={{
+                        bg: "red.500",
+                      }}
                       size="sm"
                       onClick={openDeletePictureConfirmModal}
                     >
@@ -202,6 +212,17 @@ const UserSettings = ({
                   <Box h="40px">
                     <Text textAlign="center">{userInfo.username}</Text>
                   </Box>
+                  <Box h="40px" pt={2}>
+                    <Center>
+                      <FaCalendar size={25} />
+                    </Center>
+                  </Box>
+                  <Box>
+                    <Divider w={"100px"} />
+                  </Box>
+                  <Box h="40px">
+                    <Text textAlign="center">{userInfo.birthdate}</Text>
+                  </Box>
                 </VStack>
                 <VStack spacing={2} align="center">
                   <Box h="40px" pt={2}>
@@ -224,7 +245,11 @@ const UserSettings = ({
                         </Button>
                       ) : (
                         <Button
-                          colorScheme="green"
+                          bg="green.400"
+                          color="white"
+                          _hover={{
+                            bg: "green.300",
+                          }}
                           size="sm"
                           onClick={handleEnable2FA}
                         >
@@ -253,7 +278,16 @@ const UserSettings = ({
                     onChange={fileOnChange}
                     name="avatar"
                   />
-                  <Button onClick={handleUpload}>Upload</Button>
+                  <Button
+                    bg="green.400"
+                    _hover={{
+                      bg: "green.300",
+                    }}
+                    color="white"
+                    onClick={handleUpload}
+                  >
+                    Upload
+                  </Button>
                 </InputGroup>
                 {uploadPercentage !== "" && (
                   <Text mt={2}>
@@ -283,7 +317,14 @@ const UserSettings = ({
               )}
             </Box>
             <Box>
-              <Button colorScheme="blue" onClick={onCloseUserSettings}>
+              <Button
+                bg="red"
+                color="white"
+                _hover={{
+                  bg: "red.500",
+                }}
+                onClick={onCloseUserSettings}
+              >
                 Zatvori
               </Button>
             </Box>

@@ -2,9 +2,12 @@ import { ArrowBackIcon } from "@chakra-ui/icons";
 import {
   Button,
   ButtonGroup,
+  Flex,
+  FormLabel,
   Grid,
   GridItem,
   Heading,
+  Input,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -13,7 +16,11 @@ import { useContext, useState } from "react";
 import { useNavigate, Navigate } from "react-router";
 import { AccountContext } from "../components/AccountContext";
 import TextField from "../components/TextField";
-import Logo from "../assets/logo.png";
+import DatePicker, { registerLocale } from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { format } from "date-fns";
+import { hr } from "date-fns/locale";
+
 const Yup = require("yup");
 const formSchema = Yup.object({
   username: Yup.string()
@@ -36,13 +43,20 @@ const formSchema = Yup.object({
     .email("Mail mora biti korektan")
     .max(255)
     .required("Unesite mail"),
+  birthdate: Yup.date().required("Molimo unesite datum rođenja"),
+  passwordConfirmation: Yup.string()
+    .oneOf([Yup.ref("password"), null], "Lozinke se moraju podudarati")
+    .required("Potvrdite lozinku"),
 });
 const SignUp = ({ isLoggedIn }) => {
+  registerLocale("hr", hr);
   const { setUser } = useContext(AccountContext);
   const [showpass, setShowPass] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const [emailVerificationSent, setEmailVerificationSent] = useState(false);
+  const [birthdate, setBirthdate] = useState(new Date());
+  console.log(birthdate);
   const handleShowClick = () => {
     setShowPass((lastShow) => !lastShow); // isto kao setShowPass(!showpass)
   };
@@ -68,10 +82,13 @@ const SignUp = ({ isLoggedIn }) => {
                 mail: "",
                 ime: "",
                 prezime: "",
+                birthdate: birthdate,
               }}
               validationSchema={formSchema}
               onSubmit={(values, actions) => {
-                const vals = { ...values };
+                const formattedBirthdate = format(birthdate, "yyyy-MM-dd");
+                const vals = { ...values, birthdate: formattedBirthdate };
+                console.log(vals);
                 actions.resetForm();
                 fetch("/auth/signup", {
                   method: "POST",
@@ -82,6 +99,7 @@ const SignUp = ({ isLoggedIn }) => {
                   body: JSON.stringify(vals),
                 })
                   .catch((err) => {
+                    console.error("Fetch error:", err);
                     return;
                   })
                   .then((res) => {
@@ -137,6 +155,30 @@ const SignUp = ({ isLoggedIn }) => {
                   label="Mail"
                   show="none"
                 />
+                <Flex alignItems="flex-start" width="100%">
+                  <FormLabel
+                    style={{ width: "180px" }}
+                    htmlFor="birthdate"
+                    mt="2"
+                  >
+                    Datum rođenja
+                  </FormLabel>
+                  <DatePicker
+                    name="birthdate"
+                    id="birthdate"
+                    wrapperClassName="datePicker"
+                    selected={birthdate ? birthdate : null}
+                    onChange={(date) => setBirthdate(date || new Date())} // Fallback to new Date if date is null
+                    customInput={<Input />}
+                    dateFormat="dd/MM/yyyy"
+                    locale="hr"
+                    isClearable
+                    showMonthDropdown
+                    showYearDropdown
+                    dropdownMode="select"
+                    placeholderText="Odaberite datum rođenja"
+                  />
+                </Flex>
                 <TextField
                   name="username"
                   placeholder="Upišite korisničko ime"
@@ -154,7 +196,13 @@ const SignUp = ({ isLoggedIn }) => {
                   showpass={showpass}
                   handleClick={() => handleShowClick()}
                 />
-
+                <TextField
+                  name="passwordConfirmation"
+                  placeholder="Potvrdite lozinku"
+                  autoComplete="off"
+                  label="Potvrdite Lozinku"
+                  type={showpass ? "password" : "text"}
+                />
                 <ButtonGroup pt="1rem">
                   <Button
                     borderRadius="full"

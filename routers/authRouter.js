@@ -68,10 +68,12 @@ router
   .get(async (req, res) => {
     if (req.session.user && req.session.user.username) {
       const potentialLogin = await pool.query(
-        "SELECT id, username, ime, prezime, mail, role, profileimg, two_factor_enabled FROM users u WHERE u.username=$1",
+        "SELECT id, username, ime, prezime, mail, role, profileimg, two_factor_enabled, birthdate FROM users u WHERE u.username=$1",
         [req.session.user.username]
       );
       const user = potentialLogin.rows[0];
+      console.log(user);
+      const birthdatefixed = moment(user.birthdate).format("DD.MM.YYYY.");
       if (potentialLogin.rows.length > 0) {
         res.json({
           loggedIn: true,
@@ -83,6 +85,7 @@ router
           role: user.role,
           two_factor_enabled: user.two_factor_enabled,
           profileimg: user.profileimg,
+          birthdate: birthdatefixed,
         });
       } else {
         res.json({ loggedIn: false });
@@ -93,18 +96,23 @@ router
   })
   .post(validateFormLogin, async (req, res) => {
     const potentialLogin = await pool.query(
-      "SELECT id, username, passhash, ime, prezime, mail, role, profileimg, email_verified, two_factor_enabled, two_factor_secret FROM users u WHERE u.username=$1",
+      "SELECT id, username, passhash, ime, prezime, mail, role, profileimg, email_verified, two_factor_enabled, two_factor_secret, birthdate FROM users u WHERE u.username=$1",
       [req.body.username]
     );
 
     if (potentialLogin.rowCount > 0) {
-      const isSamePass = await bcrypt.compare(
-        req.body.password,
-        potentialLogin.rows[0].passhash
-      );
       const user = potentialLogin.rows[0];
-
+      const isSamePass = await bcrypt.compare(req.body.password, user.passhash);
+      console.log(user);
       if (isSamePass) {
+        if (!user.email_verified) {
+          // If the user's email is not verified, return an error message
+          return res.status(401).json({
+            loggedIn: false,
+            status: "Molim vas potvrdite mail adresu prije prijave!",
+          });
+        }
+
         if (user.two_factor_enabled) {
           req.session.partialUser = {
             username: req.body.username,
@@ -112,28 +120,33 @@ router
             two_factor_secret: user.two_factor_secret,
             twoFactorEnabled: true,
           };
-          res.json({ twoFactorEnabled: true });
+          return res.json({ twoFactorEnabled: true });
         } else {
           req.session.user = {
             username: req.body.username,
             id: user.id,
           };
-          res.json({
+          return res.json({
             loggedIn: true,
-            username: req.body.username,
+            username: user.username,
             id: user.id,
+            ime: user.ime,
+            prezime: user.prezime,
+            mail: user.mail,
             role: user.role,
+            profileimg: user.profileimg,
+            birthdate: user.birthdate,
           });
         }
       } else {
         delete req.session.partialUser;
-        res
+        return res
           .status(400)
           .json({ loggedIn: false, status: "Krivi username ili password!" });
       }
     } else {
       delete req.session.partialUser;
-      res
+      return res
         .status(400)
         .json({ loggedIn: false, status: "Krivi username ili password!" });
     }
@@ -253,12 +266,14 @@ router.post("/signup", async (req, res) => {
     "SELECT username, mail from users WHERE username=$1 OR mail=$2",
     [req.body.username, req.body.mail]
   );
-
+  const birthdate = req.body.birthdate
+    ? new Date(req.body.birthdate).toISOString().split("T")[0]
+    : null;
   if (existingUser.rowCount === 0) {
     // register
     const hashedPass = await bcrypt.hash(req.body.password, 10);
     const newUserQuery = await pool.query(
-      "INSERT INTO users(username, passhash, ime, prezime, mail, email_verified) values($1,$2,$3,$4,$5,$6) RETURNING id, username, ime, prezime, mail",
+      "INSERT INTO users(username, passhash, ime, prezime, mail, email_verified, birthdate) values($1,$2,$3,$4,$5,$6,$7) RETURNING id, username, ime, prezime, mail, birthdate",
       [
         req.body.username,
         hashedPass,
@@ -266,6 +281,7 @@ router.post("/signup", async (req, res) => {
         req.body.prezime,
         req.body.mail,
         false,
+        birthdate,
       ]
     );
 
