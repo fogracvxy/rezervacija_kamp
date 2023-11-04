@@ -1,4 +1,4 @@
-const Yup = require("yup");
+import Yup from "yup";
 const formSchema = Yup.object({
   username: Yup.string()
     .required("Username required")
@@ -9,19 +9,18 @@ const formSchema = Yup.object({
     .min(6, "Password too short")
     .max(28, "Password too long!"),
 });
-const validateFormLogin = (req, res) => {
+const validateFormLogin = (req, res, next) => {
   const formData = req.body;
   formSchema
     .validate(formData)
-    .catch((err) => {
-      res.status(422).send();
-      console.log(err.errors);
+    .then(() => {
+      console.log("Validation Successful");
+      next();
     })
-    .then((valid) => {
-      if (valid) {
-        console.log("Login Successful");
-      }
+    .catch((err) => {
+      console.log(err.errors);
+      res.status(422).json({ errors: err.errors });
     });
 };
 
-module.exports = validateFormLogin;
+export default validateFormLogin;

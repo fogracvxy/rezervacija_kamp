@@ -1,4 +1,4 @@
-const Yup = require("yup");
+import Yup from "yup";
 const formSchema = Yup.object({
   username: Yup.string()
     .required("Username required")
@@ -36,4 +36,4 @@ const validateForm = (req, res) => {
     });
 };
 
-module.exports = validateForm;
+export default validateForm;

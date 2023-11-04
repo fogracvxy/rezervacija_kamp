@@ -1,18 +1,27 @@
-const express = require("express");
-const validateForm = require("../controllers/validateForm");
-const validateFormLogin = require("../controllers/validateFormLogin");
+import express from "express";
+import validateForm from "../controllers/validateForm.js";
+import validateFormLogin from "../controllers/validateFormLogin.js";
 const router = express.Router();
-const pool = require("../db");
-const multer = require("multer");
-const sharp = require("sharp");
-const bcrypt = require("bcrypt");
-const moment = require("moment");
-const crypto = require("crypto");
-const fsPromises = require("fs/promises");
-const path = require("path");
-const CLIENT_HOME_PAGE_URL = "/login";
+import pool from "../db.js";
+import multer from "multer";
+import sharp from "sharp";
+import bcrypt from "bcryptjs";
+import moment from "moment";
+import fsPromises from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
 const maxSize = 2097152; // 2MB
-const nodemailer = require("nodemailer");
+import nodemailer from "nodemailer";
+import crypto from "crypto";
+import fs from "fs-extra";
+import { fileTypeFromBuffer } from "file-type";
+import rateLimit from "express-rate-limit";
+import dotenv from "dotenv";
+import speakeasy from "speakeasy";
+import QRCode from "qrcode";
+dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 async function checkAdmin(req, res, next) {
   if (!req.session.user) {
     res
@@ -38,76 +47,98 @@ async function checkAdmin(req, res, next) {
   }
   next();
 }
-router.route("/login").get(async (req, res) => {
-  if (req.session.user && req.session.user.username) {
-    const potentialLogin = await pool.query(
-      "SELECT id, username, ime, prezime, mail, role, profileimg FROM users u WHERE u.username=$1",
-      [req.session.user.username]
-    );
-
-    if (potentialLogin.rows.length > 0) {
-      res.json({
-        loggedIn: true,
-        username: req.session.user.username,
-        id: potentialLogin.rows[0].id,
-        ime: potentialLogin.rows[0].ime,
-        prezime: potentialLogin.rows[0].prezime,
-        mail: potentialLogin.rows[0].mail,
-        role: potentialLogin.rows[0].role,
-        profileimg: potentialLogin.rows[0].profileimg,
-      });
-    } else {
-      res.json({ loggedIn: false });
-    }
-  } else {
-    res.json({ loggedIn: false });
+const checkUserSession = (req, res) => {
+  if (!req.session.user || !req.session.user.username) {
+    res.status(401).send("Unauthorized");
+    return false;
   }
+  return true;
+};
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,
+  message: {
+    title: "Error",
+    response: "Limit reached: Maximum 10 uploads per hour",
+    status: "error",
+  },
 });
-
-router.route("/login").post(async (req, res) => {
-  validateFormLogin(req, res);
-
-  const potentialLogin = await pool.query(
-    "SELECT id, username, passhash, ime, prezime, mail, role, profileimg, email_verified FROM users u WHERE u.username=$1",
-    [req.body.username]
-  );
-
-  if (potentialLogin.rowCount > 0) {
-    const isSamePass = await bcrypt.compare(
-      req.body.password,
-      potentialLogin.rows[0].passhash
-    );
-    if (isSamePass) {
-      if (potentialLogin.rows[0].email_verified) {
-        req.session.user = {
-          username: req.body.username,
-          id: potentialLogin.rows[0].id,
-        };
+router
+  .route("/login")
+  .get(async (req, res) => {
+    if (req.session.user && req.session.user.username) {
+      const potentialLogin = await pool.query(
+        "SELECT id, username, ime, prezime, mail, role, profileimg, two_factor_enabled FROM users u WHERE u.username=$1",
+        [req.session.user.username]
+      );
+      const user = potentialLogin.rows[0];
+      if (potentialLogin.rows.length > 0) {
         res.json({
           loggedIn: true,
           username: req.session.user.username,
-          id: potentialLogin.rows[0].id,
-          ime: potentialLogin.rows[0].ime,
-          prezime: potentialLogin.rows[0].prezime,
-          mail: potentialLogin.rows[0].mail,
-          role: potentialLogin.rows[0].role,
-          profileimg: potentialLogin.rows[0].profileimg,
+          id: user.id,
+          ime: user.ime,
+          prezime: user.prezime,
+          mail: user.mail,
+          role: user.role,
+          two_factor_enabled: user.two_factor_enabled,
+          profileimg: user.profileimg,
         });
       } else {
-        res.json({
-          loggedIn: false,
-          status: "Please verify your email before logging in!",
-        });
+        res.json({ loggedIn: false });
       }
     } else {
-      res.json({ loggedIn: false, status: "Krivi username ili password!" });
-      console.log("ne dela");
+      res.json({ loggedIn: false });
     }
-  } else {
-    console.log("ne dela");
-    res.json({ loggedIn: false, status: "Krivi username ili password!" });
-  }
-});
+  })
+  .post(validateFormLogin, async (req, res) => {
+    const potentialLogin = await pool.query(
+      "SELECT id, username, passhash, ime, prezime, mail, role, profileimg, email_verified, two_factor_enabled, two_factor_secret FROM users u WHERE u.username=$1",
+      [req.body.username]
+    );
+
+    if (potentialLogin.rowCount > 0) {
+      const isSamePass = await bcrypt.compare(
+        req.body.password,
+        potentialLogin.rows[0].passhash
+      );
+      const user = potentialLogin.rows[0];
+
+      if (isSamePass) {
+        if (user.two_factor_enabled) {
+          req.session.partialUser = {
+            username: req.body.username,
+            id: user.id,
+            two_factor_secret: user.two_factor_secret,
+            twoFactorEnabled: true,
+          };
+          res.json({ twoFactorEnabled: true });
+        } else {
+          req.session.user = {
+            username: req.body.username,
+            id: user.id,
+          };
+          res.json({
+            loggedIn: true,
+            username: req.body.username,
+            id: user.id,
+            role: user.role,
+          });
+        }
+      } else {
+        delete req.session.partialUser;
+        res
+          .status(400)
+          .json({ loggedIn: false, status: "Krivi username ili password!" });
+      }
+    } else {
+      delete req.session.partialUser;
+      res
+        .status(400)
+        .json({ loggedIn: false, status: "Krivi username ili password!" });
+    }
+  });
+
 router.post("/resend-verification-email", async (req, res) => {
   const userEmail = req.body.mail;
 
@@ -363,40 +394,14 @@ router.get("/confirm-email", async (req, res) => {
   }
 });
 
-// multer spremanje lokalno diskStorage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.resolve(__dirname, "../uploads/usersprofile"));
-  },
-  filename: function (req, file, cb) {
-    cb(
-      null,
-      file.fieldname +
-        "_" +
-        `${req.session.user.username}` +
-        Date.now() +
-        `${path.extname(file.originalname)}`
-    );
-  },
-});
+const memoryStorage = multer.memoryStorage();
 
 const myMulter = multer({
-  storage: storage,
-  fileFilter: (req, file, cb) => {
-    if (
-      file.mimetype == "image/png" ||
-      file.mimetype == "image/jpg" ||
-      file.mimetype == "image/jpeg"
-    ) {
-      cb(null, true);
-    } else {
-      return cb(new Error("Only .png, .jpg and .jpeg format allowed!"));
-    }
-  },
+  storage: memoryStorage,
   limits: { fileSize: maxSize },
 });
-
 const upload = myMulter.single("avatar");
+const defaultImageName = "default.jpg";
 // ruta za dohvacanje profilnih fotki za usera
 router.get("/profilepicture", (req, res) => {
   if (req.session.user && req.session.user.username) {
@@ -483,93 +488,150 @@ router.post("/rezervirajtermin", async (req, res) => {
 });
 //slanje rezerviranih datuma
 // ruta za upload fotki
-router.post("/uploadpicture", async (req, res) => {
-  if (req.session.user && req.session.user.username) {
-    //dohvat fotografija iz baze prijasnjih kako bi kad se uploada krivi file ili file vece velicine nebi maknula fotografija korisnika
-    const sqlprofile = await pool.query(
+router.post("/uploadpicture", uploadLimiter, upload, async (req, res) => {
+  if (!checkUserSession(req, res)) return;
+
+  if (req.fileValidationError) {
+    res.send({
+      title: "Error",
+      response: req.fileValidationError,
+      status: "error",
+    });
+    return;
+  }
+
+  if (!req.file) {
+    res.send({
+      title: "Error",
+      response: "No file received",
+      status: "error",
+    });
+    return;
+  }
+
+  const fileType = await fileTypeFromBuffer(req.file.buffer);
+  if (!fileType || !["jpg", "jpeg", "png"].includes(fileType.ext)) {
+    res.send({
+      title: "Error",
+      response: "Invalid file type. Please upload a jpg, jpeg, or png file.",
+      status: "error",
+    });
+    return;
+  }
+
+  const profileDelete = await pool.query(
+    "SELECT profileimg FROM users where username=$1",
+    [req.session.user.username]
+  );
+
+  try {
+    const randomString = crypto.randomBytes(8).toString("hex");
+    const filename =
+      req.file.fieldname +
+      "_" +
+      `${req.session.user.username}` +
+      Date.now() +
+      randomString +
+      `${path.extname(req.file.originalname)}`;
+
+    const destinationDir = path.resolve(
+      __dirname,
+      `../uploads/usersprofile/${req.session.user.username}/profilepicture/`
+    );
+    await ensureDir(destinationDir);
+
+    const destinationPath = path.join(destinationDir, filename);
+    await sharp(req.file.buffer)
+      .resize({ width: 300, height: 300 })
+      .toFile(destinationPath);
+    const databaseurlSave =
+      `/uploads/usersprofile/${req.session.user.username}/profilepicture/` +
+      filename;
+    pool.query(
+      "UPDATE users SET profileimg=$1 WHERE username=$2 RETURNING profileimg",
+      [databaseurlSave, req.session.user.username],
+      async (err, result) => {
+        if (err) {
+          console.log(err);
+        } else {
+          if (
+            profileDelete.rowCount !== 0 &&
+            profileDelete.rows[0].profileimg &&
+            profileDelete.rows[0].profileimg !== defaultImageName
+          ) {
+            const oldFileName = path.basename(profileDelete.rows[0].profileimg);
+            const filePath = path.resolve(
+              __dirname,
+              `../uploads/usersprofile/${req.session.user.username}/profilepicture/` +
+                oldFileName
+            );
+
+            if (fs.existsSync(filePath)) {
+              try {
+                await fsPromises.unlink(filePath);
+              } catch (err) {
+                console.log(`Error while deleting file: ${err}`);
+              }
+            } else {
+              console.log(`File does not exist, skipping delete: ${filePath}`);
+            }
+          }
+
+          res.send({
+            title: "Upload",
+            response: "Upload successful",
+            status: "success",
+            source: result.rows[0].profileimg,
+          });
+        }
+      }
+    );
+  } catch (error) {
+    console.log(`General error: ${error}`);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+router.post("/delete-profile-picture", async (req, res) => {
+  if (!checkUserSession(req, res)) return;
+
+  try {
+    // Get the old profile picture
+    const profileDelete = await pool.query(
       "SELECT profileimg FROM users where username=$1",
       [req.session.user.username]
     );
-    upload(req, res, async function (err) {
-      if (err instanceof multer.MulterError) {
-        res.send({
-          title: "Error",
-          response: "Dozvoljena maksimalna veličina 2MB",
-          status: "error",
-          source: sqlprofile.rows[0].profileimg,
-        });
-      } else if (err) {
-        res.send({
-          title: "Error",
-          response: "Dozvoljeni formati: .png/.jpg/.jpeg ",
-          status: "error",
-          source: sqlprofile.rows[0].profileimg,
-        });
-      } else {
-        //file path za spremanje nove datotke
-        const filePaths = path.resolve(
-          __dirname,
-          `../uploads/usersprofile/${req.file.filename}`
-        );
-        //buffer kako bi uzeli buffer fotke i onda ju overwritali sa starim fajlom (sharp(buffer).toFile(filePaths);)
-        const buffer = await sharp(req.file.path)
-          .resize({ width: 300, height: 300 })
-          .toBuffer();
-        sharp(buffer).toFile(filePaths);
-        //ubacivanje u profileimg usera "/putanja
-        //brisanje fotografije iz storagea
-        const profileDelete = await pool.query(
-          "SELECT profileimg FROM users where username=$1",
-          [req.session.user.username]
-        );
 
-        if (profileDelete.rowCount === 0) {
-          console.log("error ne treba obrisati nista");
-        } else {
-          //filepath za brisanje stare datoteke
-          const filePath = path.resolve(
-            __dirname,
-            `../uploads/usersprofile/${profileDelete.rows[0].profileimg}`
-          );
-          // funkcija za brisanje profilne fotografije prosle
-          const deleteFile = async (filePath) => {
-            try {
-              await fsPromises.unlink(filePath);
-            } catch (err) {
-              console.log(err);
-            }
-          };
-          //pozivanje funkcije za brisanje prosle fotografije
-          deleteFile(filePath);
-        }
-        // updejt na bazi sa novim imenom fotografije za doredenog usera
-        pool.query(
-          "UPDATE users SET profileimg=$1 WHERE username=$2 RETURNING profileimg",
-          [req.file.filename, req.session.user.username],
-          (err, result) => {
-            if (err) {
-              console.log(err);
-            } else {
-              res.send({
-                title: "Upload",
-                response: "Upload uspješan",
-                status: "success",
-                source: result.rows[0].profileimg,
-              });
-            }
-          }
-        );
+    if (profileDelete.rowCount !== 0) {
+      const filePath = path.resolve(
+        __dirname,
+        `..${profileDelete.rows[0].profileimg}`
+      );
+
+      if (fs.existsSync(filePath)) {
+        await fsPromises.unlink(filePath);
       }
-    });
-  } else {
-    //U slucaju da netko nije loginan i pokusava uploadat fotku
-    res.json({
-      title: "Error",
-      response: "Prijavite se u sustav",
-      status: "error",
-    });
+    }
+
+    // Reset profile image in the database to default or null
+    await pool.query("UPDATE users SET profileimg = NULL WHERE username = $1", [
+      req.session.user.username,
+    ]);
+
+    res.json({ status: "success" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ status: "error" });
   }
 });
+
+async function ensureDir(dirpath) {
+  try {
+    await fsPromises.access(dirpath);
+  } catch (error) {
+    await fsPromises.mkdir(dirpath, { recursive: true });
+  }
+}
 router.delete("/rezervacijadelete/:id", async (req, res) => {
   if (req.session.user && req.session.user.username) {
     try {
@@ -803,7 +865,226 @@ router.route("/rezervacijelista").get(checkAdmin, async (req, res) => {
       status: "error",
     });
   }
-}); //pripremio sam ovaj route za adminCheck djelove
+});
+
+function generateBackupCodes(count, length) {
+  const codes = [];
+  for (let i = 0; i < count; i++) {
+    codes.push(crypto.randomBytes(length).toString("hex"));
+  }
+  return codes;
+}
+
+// Function to hash backup codes
+async function hashBackupCodes(codes) {
+  const hashedCodes = [];
+  for (const code of codes) {
+    const hash = await bcrypt.hash(code, 10); // 10 is the cost factor for bcrypt
+    hashedCodes.push(hash);
+  }
+  return hashedCodes;
+}
+router.post("/generate-backup-codes", async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const rawCodes = generateBackupCodes(10, 6); // Generate 10 backup codes, each 6 bytes long
+    const hashedCodes = await hashBackupCodes(rawCodes);
+
+    // Store hashed codes in the database
+    await pool.query(
+      "UPDATE users SET two_factor_backup_codes = $1 WHERE id = $2",
+      [hashedCodes, userId]
+    );
+
+    // Send the raw codes to the user
+    res.json({ backupCodes: rawCodes });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Could not generate backup codes" });
+  }
+});
+
+// When verifying 2FA with a backup code
+router.post("/verify-backup-code", async (req, res) => {
+  const { backupCode } = req.body;
+  const userId = req.session.user.id;
+
+  // Retrieve the hashed backup codes from the database
+  const result = await pool.query(
+    "SELECT two_factor_backup_codes FROM users WHERE id = $1",
+    [userId]
+  );
+  const hashedCodes = result.rows[0].two_factor_backup_codes;
+
+  // Find the backup code and verify it
+  let codeIndex = -1;
+  for (let i = 0; i < hashedCodes.length; i++) {
+    const validCode = await bcrypt.compare(backupCode, hashedCodes[i]);
+    if (validCode) {
+      codeIndex = i;
+      break;
+    }
+  }
+
+  if (codeIndex !== -1) {
+    // Remove the used backup code from the database
+    hashedCodes.splice(codeIndex, 1);
+    await pool.query(
+      "UPDATE users SET two_factor_backup_codes = $1 WHERE id = $2",
+      [hashedCodes, userId]
+    );
+
+    // Proceed with login or other action
+    res.json({ verified: true });
+  } else {
+    res.status(400).json({ verified: false, error: "Invalid backup code!" });
+  }
+});
+router.route("/generate-2fa").post(async (req, res) => {
+  const secret = speakeasy.generateSecret({ length: 20 }); // Generates a 20-byte secret
+  const dataUrl = await QRCode.toDataURL(secret.otpauth_url);
+
+  // Store the secret in the session for later verification
+  req.session.temp_2fa_secret = secret.base32;
+
+  // Make sure to save the session if your session store is not auto-saving
+  req.session.save((err) => {
+    if (err) {
+      res.status(500).json({ error: "Failed to save session information." });
+      return;
+    }
+    res.json({ url: dataUrl });
+  });
+});
+
+router.route("/verify-2fa").post(async (req, res) => {
+  const secret = req.session.temp_2fa_secret;
+
+  // Log the secret for debugging purposes; remove this in production
+  console.log("Secret used for verification:", secret);
+
+  if (!secret) {
+    return res.status(400).json({ error: "No 2FA setup in progress." });
+  }
+
+  const token = req.body.token.trim(); // Trim the token to remove any accidental whitespace
+  const verified = speakeasy.totp.verify({
+    secret,
+    encoding: "base32",
+    token: token,
+    window: 1, // Allow a 30-second window for time drift
+  });
+
+  if (verified) {
+    // Generate and hash backup codes
+    const rawCodes = generateBackupCodes(10, 6);
+    const hashedCodes = await hashBackupCodes(rawCodes);
+
+    try {
+      // Update the user's 2FA settings in the database
+      await pool.query(
+        "UPDATE users SET two_factor_secret=$1, two_factor_enabled=true, two_factor_backup_codes=$3 WHERE id=$2",
+        [secret, req.session.user.id, JSON.stringify(hashedCodes)] // Stringify the JSON here
+      );
+
+      // Remove the temp secret from the session
+      delete req.session.temp_2fa_secret;
+
+      // Return the verified status and the backup codes to the user
+      res.json({ verified: true, backupCodes: rawCodes });
+    } catch (error) {
+      console.error("Database error:", error);
+      res.status(500).json({ error: "Failed to update user settings." });
+    }
+  } else {
+    res.status(400).json({ verified: false, error: "Invalid 2FA token!" });
+  }
+});
+
+router.post("/verify-login-2fa", async (req, res) => {
+  const { token } = req.body;
+  const partialUser = req.session.partialUser;
+
+  if (!partialUser) {
+    return res
+      .status(400)
+      .json({ loggedIn: false, error: "No partial login found." });
+  }
+  console.log(partialUser);
+  const verified = speakeasy.totp.verify({
+    secret: partialUser.two_factor_secret,
+    encoding: "base32",
+    token,
+  });
+
+  if (verified) {
+    // Retrieve more details if needed from the database before setting the full user session
+    // Assuming you have the user's ID in partialUser.id:
+    const userDetails = await pool.query(
+      "SELECT role, two_factor_enabled, two_factor_backup_codes, two_factor_secret, two_factor_enabled FROM users WHERE id = $1",
+      [partialUser.id]
+    );
+    const user = userDetails.rows[0];
+    req.session.user = {
+      ...partialUser, // Spread the existing partialUser details
+      role: user.role,
+      two_factor_secret: user.two_factor_secret,
+      two_factor_enabled: user.two_factor_enabled,
+      two_factor_backup_codes: user.two_factor_backup_codes,
+    };
+
+    delete req.session.partialUser; // Don't forget to clean up the partialUser
+    console.log(req.session);
+    res.json({ loggedIn: true, ...req.session.user });
+  } else {
+    res.status(400).json({ loggedIn: false, error: "Invalid 2FA token!" });
+  }
+});
+router.post("/disable-2fa", async (req, res) => {
+  try {
+    const userId = req.session.user.id; // Popravljen ovaj dio tu je bio problem
+    console.log("About to run SQL query");
+    console.log(`User ID: ${userId}`); // Log to confirm
+
+    const result = await pool.query(
+      "UPDATE users SET two_factor_enabled = false, two_factor_secret = NULL, two_factor_backup_codes = NULL WHERE id = $1",
+      [userId]
+    );
+
+    console.log("SQL query executed");
+    console.log(`Rows affected: ${result.rowCount}`);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ disabled: false, error: "User not found" });
+    }
+    res.json({ disabled: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ disabled: false, error: "Could not disable 2FA" });
+  }
+});
+router.post("/verify-disable-2fa", async (req, res) => {
+  const { token } = req.body;
+  console.log(req.session);
+  const userStoredSecret = req.session.user.two_factor_secret;
+  // Retrieve the stored secret
+  console.log(userStoredSecret);
+  const verified = speakeasy.totp.verify({
+    secret: userStoredSecret,
+    encoding: "base32",
+    token,
+  });
+
+  if (verified) {
+    // If the token is valid, respond with a success message
+    res.json({ verified: true });
+  } else {
+    // If the token is invalid, respond with an error message
+    res.status(400).json({ verified: false, error: "Invalid 2FA token!" });
+  }
+});
+
+//pripremio sam ovaj route za adminCheck djelove
 /*   .post(checkAdmin, (req, res) => {
     //stuff here
   }); */
@@ -816,4 +1097,4 @@ router.get("/logout", (req, res) => {
     }
   });
 });
-module.exports = router;
+export default router;

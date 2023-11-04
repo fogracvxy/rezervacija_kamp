@@ -19,6 +19,13 @@ import {
   Text,
   HStack,
   ButtonGroup,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
 } from "@chakra-ui/react";
 
 import UserSettings from "./UserSettings";
@@ -35,7 +42,9 @@ const Navbartop = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [uploadPercentage, setUploadPercentage] = useState("");
   const toast = useToast();
+  const [profileImageSource, setProfileImageSource] = useState("");
   const { user, setUser, checkedForUser } = useContext(AccountContext);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const {
     isOpen: isModalFormOpen,
     onOpen: onModalFormOpen,
@@ -60,43 +69,47 @@ const Navbartop = () => {
         setUserInfo(result);
       });
   }, []);
+  useEffect(() => {
+    fetch("/auth/profilepicture", {
+      method: "GET",
+      credentials: "include",
+    })
+      .then(function (response) {
+        return response.json();
+      })
+      .then((resBody) => {
+        setProfileImageSource(resBody.source);
+      });
+  }, []);
   //useEffect za dohvat profilnih fotki i spremanje u profileImageSource
-
+  const handleProfilePictureDeleted = () => {
+    // Update the state variable that holds the profile picture URL
+    setProfileImageSource(null); // Assuming `setProfilePictureSource` is your state updater
+  };
   //funkcija za upload profilne fotografije
   const handleUpload = () => {
+    const MAX_FILE_SIZE = 2000000;
+    const TOAST_DURATION = 6000;
+
+    const showErrorToast = (message) => {
+      toast({
+        title: "Greška",
+        description: message,
+        status: "error",
+        duration: TOAST_DURATION,
+        isClosable: true,
+      });
+      setUploadPercentage("");
+    };
+
     let formData = new FormData();
-    if (image === undefined || image === null || !image) {
-      //check jel image prazan za upload da bi sprijecili backend upload error
-      toast({
-        title: "Greška",
-        description: "Dodajte datoteku",
-        status: "error",
-        duration: 6000,
-        isClosable: true,
-      });
-      setUploadPercentage("");
-    } else if (
-      image.type.split("/")[1] !== "jpeg" &&
-      image.type.split("/")[1] !== "png" &&
-      image.type.split("/")[1] !== "jpg"
-    ) {
-      toast({
-        title: "Greška",
-        description: "Dozvoljeni formati: .png/.jpg/.jpeg",
-        status: "error",
-        duration: 6000,
-        isClosable: true,
-      });
-      setUploadPercentage("");
-    } else if (image.size > 2000000) {
-      toast({
-        title: "Greška",
-        description: "Dozvoljena maksimalna veličina 2MB",
-        status: "error",
-        duration: 6000,
-        isClosable: true,
-      });
-      setUploadPercentage("");
+
+    if (!image) {
+      showErrorToast("Dodajte datoteku");
+      // } else if (!ALLOWED_FORMATS.includes(image.type.split("/")[1])) {
+      //   showErrorToast("Dozvoljeni formati: .png/.jpg/.jpeg");
+    } else if (image.size > MAX_FILE_SIZE) {
+      showErrorToast("Dozvoljena maksimalna veličina 2MB");
     } else {
       setUploadPercentage("uploading");
       formData.append("avatar", image);
@@ -108,10 +121,15 @@ const Navbartop = () => {
         .then((res) => res.json())
         .then((resBody) => {
           toastNotification(resBody.title, resBody.response, resBody.status);
+          if (resBody.status === "success") {
+            // Only update the profile picture source if the status is "success"
+            setProfileImageSource(resBody.source);
+          }
           setUploadPercentage(resBody.status);
         });
     }
   };
+
   const toastNotification = (title, description, status) => {
     toast({
       title: title,
@@ -142,7 +160,9 @@ const Navbartop = () => {
         navigate("/"); // navigate nakon logouta
       });
   };
-
+  const openLogoutConfirmModal = () => {
+    setIsLogoutConfirmOpen(true);
+  };
   const navigateAdmin = () => {
     navigate("/rezervacijaadmin");
   };
@@ -235,7 +255,7 @@ const Navbartop = () => {
                     boxSizing="content-box"
                     borderWidth="3px"
                     size={"sm"}
-                    src={`/uploads/${user.profileimg}`}
+                    src={profileImageSource}
                   />
                 </MenuButton>
                 <MenuList
@@ -248,7 +268,7 @@ const Navbartop = () => {
                 >
                   <br />
                   <Center>
-                    <Avatar size={"2xl"} src={`/uploads/${user.profileimg}`} />
+                    <Avatar size={"2xl"} src={profileImageSource} />
                   </Center>
                   <br />
                   <Center>
@@ -315,12 +335,45 @@ const Navbartop = () => {
                       background: "transparent",
                     }}
                     color="red"
-                    onClick={handleLogout}
+                    onClick={openLogoutConfirmModal}
                   >
                     Odjava
                   </MenuItem>
                 </MenuList>
               </Menu>
+              {isLogoutConfirmOpen && (
+                <Modal
+                  isOpen={isLogoutConfirmOpen}
+                  onClose={() => setIsLogoutConfirmOpen(false)}
+                >
+                  <ModalOverlay />
+                  <ModalContent>
+                    <ModalHeader>Potvrda</ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody>
+                      Jeste li sigurni da se želite odjaviti?
+                    </ModalBody>
+                    <ModalFooter>
+                      <Button
+                        mr="3"
+                        colorScheme="red"
+                        onClick={() => {
+                          handleLogout();
+                          setIsLogoutConfirmOpen(false);
+                        }}
+                      >
+                        Yes
+                      </Button>
+                      <Button
+                        colorScheme="gray"
+                        onClick={() => setIsLogoutConfirmOpen(false)}
+                      >
+                        No
+                      </Button>
+                    </ModalFooter>
+                  </ModalContent>
+                </Modal>
+              )}
             </Stack>
           ) : (
             <LoginButton />
@@ -331,9 +384,10 @@ const Navbartop = () => {
           userInfo={userInfo}
           fileOnChange={fileOnChange}
           handleUpload={handleUpload}
-          profilePictureSource={user.profileimg}
+          profilePictureSource={profileImageSource}
           progressUpload={uploadPercentage}
           onCloseUserSettings={onCloseUserSettings}
+          handleProfilePictureDeleted={handleProfilePictureDeleted}
         />
         <FormModal
           isOpenFormModal={isModalFormOpen}

@@ -33,6 +33,37 @@ const LoginPage = ({ isLoggedIn }) => {
   const { setUser } = useContext(AccountContext);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const [isTwoFAEnabled, setTwoFAEnabled] = useState(false);
+  const [twoFACode, setTwoFACode] = useState("");
+  const [loginInfo, setLoginInfo] = useState(null);
+  const verifyTwoFA = async () => {
+    if (!loginInfo) return;
+
+    try {
+      const res = await fetch("/auth/verify-login-2fa", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: loginInfo.username,
+          password: loginInfo.password,
+          token: twoFACode,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.loggedIn) {
+        setUser(data); // Assuming setUser updates your authentication state
+        navigate("/home");
+      } else {
+        setError(data.status || "Invalid 2FA code");
+      }
+    } catch (error) {
+      setError(error.message);
+    }
+  };
   return (
     <>
       {isLoggedIn ? (
@@ -44,35 +75,27 @@ const LoginPage = ({ isLoggedIn }) => {
               initialValues={{ username: "", password: "" }}
               validationSchema={formSchema}
               onSubmit={(values, actions) => {
-                const vals = { ...values };
-                actions.resetForm();
                 fetch("/auth/login", {
                   method: "POST",
-                  credentials: "include",
                   headers: {
                     "Content-Type": "application/json",
                   },
-                  body: JSON.stringify(vals),
+                  body: JSON.stringify(values),
                 })
-                  .catch((err) => {
-                    return;
-                  })
-                  .then((res) => {
-                    if (!res || !res.ok || res.status >= 400) {
-                      return;
-                    }
-
-                    return res.json();
-                  })
+                  .then((res) => res.json())
                   .then((data) => {
-                    if (!data) return;
-                    setUser({ ...data });
-                    if (data.status) {
-                      setError(data.status);
+                    if (data.twoFactorEnabled) {
+                      setTwoFAEnabled(true);
+                      setLoginInfo(values);
                     } else if (data.loggedIn) {
                       navigate("/");
                     }
-                  });
+                    setUser(data);
+                    console.log(data);
+                    setError(data.status);
+                  })
+                  .catch((err) => setError(err.message));
+                actions.resetForm();
               }}
             >
               <VStack
@@ -91,43 +114,61 @@ const LoginPage = ({ isLoggedIn }) => {
                 <Text as="p" color="red.500">
                   {error}
                 </Text>
-                <TextField
-                  name="username"
-                  placeholder="Korisničko ime"
-                  autoComplete="off"
-                  label="Korisničko ime"
-                  borderColor="black"
-                  focusBorderColor="#325731"
-                  show="none"
-                />
-                <TextField
-                  name="password"
-                  placeholder="Password"
-                  autoComplete="off"
-                  label="Password"
-                  type="password"
-                  borderColor="black"
-                  focusBorderColor="#325731"
-                  show="none"
-                />
-                <ButtonGroup pt="1rem">
-                  <Button
-                    borderRadius="full"
-                    style={{ backgroundColor: "#698A2E", color: "white" }}
-                    type="submit"
-                  >
-                    Prijava
-                    {/* {t("Prijava")} */}
-                  </Button>
-                  <Button
-                    borderRadius="full"
-                    style={{ backgroundColor: "#6E633A", color: "white" }}
-                    onClick={() => navigate("/register")}
-                  >
-                    Registracija
-                    {/* {t("Kreiraj")} */}
-                  </Button>
-                </ButtonGroup>
+                {isTwoFAEnabled ? (
+                  <>
+                    <TextField
+                      name="twoFACode"
+                      placeholder="Enter 2FA code"
+                      value={twoFACode}
+                      onChange={(e) => setTwoFACode(e.target.value)}
+                      label="2FA Code"
+                      show="none"
+                      autoComplete="off"
+                    />
+                    <Button onClick={verifyTwoFA}>Verify 2FA</Button>
+                  </>
+                ) : (
+                  <>
+                  
+                    <TextField
+                      name="username"
+                      placeholder="Korisničko ime"
+                      autoComplete="off"
+                      label="Korisničko ime"
+                      borderColor="black"
+                      focusBorderColor="#325731"
+                      show="none"
+                    />
+                    <TextField
+                      name="password"
+                      placeholder="Password"
+                      autoComplete="off"
+                      label="Password"
+                      type="password"
+                      borderColor="black"
+                      focusBorderColor="#325731"
+                      show="none"
+                    />
+                    <ButtonGroup pt="1rem">
+                      <Button
+                        borderRadius="full"
+                        style={{ backgroundColor: "#698A2E", color: "white" }}
+                        type="submit"
+                      >
+                        Prijava
+                        {/* {t("Prijava")} */}
+                      </Button>
+                      <Button
+                        borderRadius="full"
+                        style={{ backgroundColor: "#6E633A", color: "white" }}
+                        onClick={() => navigate("/register")}
+                      >
+                        Registracija
+                        {/* {t("Kreiraj")} */}
+                      </Button>
+                    </ButtonGroup>
+                  </>
+                )}
               </VStack>
             </Formik>
           </GridItem>

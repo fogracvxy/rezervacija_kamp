@@ -6,6 +6,7 @@ import { useColorMode } from "@chakra-ui/react";
 
 function App() {
   const { colorMode, toggleColorMode } = useColorMode();
+  const isOn = true;
   useEffect(() => {
     if (colorMode === "light") return;
     toggleColorMode();
@@ -13,13 +14,19 @@ function App() {
   const { checkedForUser } = useContext(AccountContext);
   return (
     <div className="App">
-      {!checkedForUser ? (
-        <Loading />
+      {isOn ? (
+        !checkedForUser ? (
+          <Loading />
+        ) : (
+          <>
+            <Meta />
+            <Views />
+          </>
+        )
       ) : (
-        <>
-          <Meta />
-          <Views />
-        </>
+        <div style={{ color: "red", textAlign: "center", fontSize: "70px" }}>
+          <h1>Stranica je u izgradnji</h1>
+        </div>
       )}
     </div>
   );
